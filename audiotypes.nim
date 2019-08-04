@@ -14,4 +14,27 @@ type
     of stop:
       nil
 
+  GeneratorParams* = object
+    leftfreq*: float32
+    rightfreq*: float32
+
+    leftvol*: float32
+    rightvol*: float32
+
+  ControlMessageKind* = enum
+    leftfreq, rightfreq, leftvol, rightvol
+
+  ControlMessage* = object
+    case kind*: ControlMessageKind
+    of leftfreq:
+      lfreq*: float32
+    of rightfreq:
+      rfreq*: float32
+    of leftvol:
+      lvol*: float32
+    of rightvol:
+      rvol*: float32
+
+
 var audiochannel*: Channel[AudioMessage]
+var controlchannel*: Channel[ControlMessage]

@@ -50,7 +50,7 @@ check(PA.OpenDefaultStream(cast[PStream](stream.addr),
                            numInputChannels = 0,
                            numOutputChannels = 2,
                            sampleFormat = sfFloat32,
-                           sampleRate = 44_100,
+                           sampleRate = 44_101,
                            framesPerBuffer = 256,
                            streamCallback = streamCallback,
                            userData = cast[pointer](phase.addr)))

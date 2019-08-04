@@ -39,7 +39,6 @@ var streamCallback = proc(
   var
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     phase = cast[ptr TPhase](userData)
-    success : bool
 
   var msg : AudioMessage 
   msg = audiochannel.recv()

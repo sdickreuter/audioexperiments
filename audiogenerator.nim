@@ -28,33 +28,51 @@ const pi = 3.141592653589
 var
   thread: Thread[void]
   currentframe: int = 0
+  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:1.0,rightvol:1.0)
+
 
 proc runthread {.thread.} =
   var 
     t : array[framesPerBuffer, float32]
-    audiodata : array[framesPerBuffer, float32]
+    leftdata : array[framesPerBuffer, float32]
+    rightdata : array[framesPerBuffer, float32]
+    success: bool
 
   while true:
-    #let msg : AudioMessage = audiochannel.()
-    #case msg.kind
-    #of audio:
-    #  echo(msg.left[0])
-    #of stop:
-    #  break
-    if audiochannel.peek() < 20:
+    var msg : ControlMessage 
+    (success, msg)= controlchannel.tryRecv()
+    if success:
+      case msg.kind
+      of leftfreq:
+        params.leftfreq = msg.lfreq
+      of rightfreq:
+        params.rightfreq = msg.rfreq
+      of leftvol:
+        params.leftvol = msg.lvol
+      of rightvol:
+        params.rightvol = msg.rvol
+    
+    if audiochannel.peek() < 10:
       
       t = linspace(currentframe, currentframe + int(framesPerBuffer))
       for i in 0..<framesPerBuffer: 
         t[i] /= float32(sampleRate)
       
       for i in 0..<framesPerBuffer: 
-        audiodata[i] = sin(freq*(2*pi)*t[i])*0.15
+        leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol*0.15
+        rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol*0.15
 
       var msg = AudioMessage(kind: audio)
-      msg.left = audiodata
+      msg.left = leftdata
+      msg.right = rightdata
       audiochannel.send(msg)
       currentframe += int(framesPerBuffer)
 
+
+    if t[framesPerBuffer-1] > 2:
+      var msg = ControlMessage(kind: rightfreq)
+      msg.rfreq = 444
+      controlchannel.send(msg)
 
     if t[framesPerBuffer-1] > 5:
       var msg = AudioMessage(kind: stop)
@@ -72,7 +90,8 @@ proc stopThread {.noconv.} =
 # Initialize module
 addQuitProc(stopThread)
 audiochannel.open()
+controlchannel.open()
 thread.createThread(runthread)
 initaudio()
-if audiochannel.peek() > 15: 
+if audiochannel.peek() > 8: 
   startaudio()
