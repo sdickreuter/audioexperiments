@@ -26,7 +26,7 @@ const freq = 440
 const pi = 3.141592653589
 
 var
-  thread: Thread[void]
+  generatorthread: Thread[void]
   currentframe: int = 0
   params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:1.0,rightvol:1.0)
 
@@ -37,9 +37,9 @@ proc runthread {.thread.} =
     leftdata : array[framesPerBuffer, float32]
     rightdata : array[framesPerBuffer, float32]
     success: bool
+    msg : ControlMessage 
 
   while true:
-    var msg : ControlMessage 
     (success, msg)= controlchannel.tryRecv()
     if success:
       case msg.kind
@@ -51,6 +51,9 @@ proc runthread {.thread.} =
         params.leftvol = msg.lvol
       of rightvol:
         params.rightvol = msg.rvol
+      of stopthread:
+        audiochannel.send(AudioMessage(kind: stop))
+        break
     
     if audiochannel.peek() < 10:
       
@@ -75,23 +78,24 @@ proc runthread {.thread.} =
       controlchannel.send(msg)
 
     if t[framesPerBuffer-1] > 5:
-      var msg = AudioMessage(kind: stop)
-      audiochannel.send(msg)
-      #terminateaudio()
-      break
+      controlchannel.send(ControlMessage(kind: stopthread))
 
-proc stopThread {.noconv.} =
-  joinThread(thread)
+
+proc stopThread* {.noconv.} =
+  joinThread(generatorthread)
   audiochannel.send(AudioMessage(kind: stop))
-  close(audiochannel)
+  #close(audiochannel)
   
-
+proc startThread* {.noconv.} =
+  generatorthread.createThread(runthread)
+  initstream()
+  if audiochannel.peek() > 8: 
+    startstream()
 
 # Initialize module
 addQuitProc(stopThread)
 audiochannel.open()
 controlchannel.open()
-thread.createThread(runthread)
-initaudio()
-if audiochannel.peek() > 8: 
-  startaudio()
+
+when isMainModule:
+  startThread()

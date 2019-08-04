@@ -22,7 +22,7 @@ type
     rightvol*: float32
 
   ControlMessageKind* = enum
-    leftfreq, rightfreq, leftvol, rightvol
+    leftfreq, rightfreq, leftvol, rightvol, stopthread
 
   ControlMessage* = object
     case kind*: ControlMessageKind
@@ -34,7 +34,8 @@ type
       lvol*: float32
     of rightvol:
       rvol*: float32
-
+    of stopthread:
+      nil
 
 var audiochannel*: Channel[AudioMessage]
 var controlchannel*: Channel[ControlMessage]

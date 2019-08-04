@@ -5,17 +5,12 @@ import audiotypes
 import audiogenerator
 import audioplayer
 
-proc initplayback() =
-  thread.createThread(runthread)
-  initaudio()
-  if audiochannel.peek() > 8: 
-  startaudio()
 
 proc main*() =
   var mainwin: Window
 
   
-  mainwin = newWindow("libui Control Gallery", 640, 480, true)
+  mainwin = newWindow("Binaural Audio Generator", 640, 480, true)
   mainwin.margined = true
   
   mainwin.onClosing = (proc (): bool = return true)

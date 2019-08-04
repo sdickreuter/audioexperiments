@@ -21,12 +21,12 @@ var
   stream: PStream
 
 
-proc terminateaudio*() =
+proc terminatestream*() =
   check(PA.StopStream(stream))
   check(PA.CloseStream(stream))
   check(PA.Terminate())
 
-proc stopaudio*() =
+proc stopstream*() =
   check(PA.StopStream(stream))
 
 
@@ -52,11 +52,11 @@ var streamCallback = proc(
         phase.right = msg.right[i]
     of stop:
       echo("stopaudio")
-      stopaudio()
+      stopstream()
   
   scrContinue.cint
 
-proc initaudio*() = 
+proc initstream*() = 
   check(PA.Initialize())
   check(PA.OpenDefaultStream(cast[PStream](stream.addr),
                              numInputChannels = 0,
@@ -67,7 +67,7 @@ proc initaudio*() =
                              streamCallback = streamCallback,
                              userData = cast[pointer](phase.addr)))
 
-proc startaudio*() =
+proc startstream*() =
   check(PA.StartStream(stream))
   #PA.Sleep(2000)
 
