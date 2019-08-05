@@ -4,13 +4,15 @@ const framesPerBuffer* : culong = 2048
 
 type
   AudioMessageKind* = enum
-    audio, stop
+    audio, silent, stop
 
   AudioMessage* = object
     case kind*: AudioMessageKind
     of audio:
       left*: array[framesPerBuffer, float32]
       right*: array[framesPerBuffer, float32]
+    of silent:
+      nil
     of stop:
       nil
 
@@ -22,7 +24,7 @@ type
     rightvol*: float32
 
   ControlMessageKind* = enum
-    leftfreq, rightfreq, leftvol, rightvol, stopthread
+    leftfreq, rightfreq, leftvol, rightvol, setactive, setinactive, terminate
 
   ControlMessage* = object
     case kind*: ControlMessageKind
@@ -34,7 +36,11 @@ type
       lvol*: float32
     of rightvol:
       rvol*: float32
-    of stopthread:
+    of setactive:
+      nil
+    of setinactive:
+      nil
+    of terminate:
       nil
 
 var audiochannel*: Channel[AudioMessage]

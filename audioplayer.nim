@@ -50,6 +50,12 @@ var streamCallback = proc(
 
         phase.left = msg.left[i]
         phase.right = msg.right[i]
+    of silent:
+      for i in 0 ..< framesPerBuf.int:
+        outBuf[i] = phase[]
+
+        phase.left = 0
+        phase.right = 0
     of stop:
       echo("stopaudio")
       stopstream()
