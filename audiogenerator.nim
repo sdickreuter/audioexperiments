@@ -1,8 +1,8 @@
 #import strutils, times, locks
 import audiotypes
-import audioplayer
+#import audioplayer
 import math
-import os
+#import os
 
 # modified from https://github.com/jlp765/seqmath
 proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32] =

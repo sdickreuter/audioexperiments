@@ -31,9 +31,10 @@ proc main*() =
   let buttonbox = newHorizontalBox(true)
   box.add(buttonbox)
   
+  
 
   proc onstartbutton() =
-    echo("start pressed")
+    #echo("start pressed")
     #startThread()
     var msg = ControlMessage(kind: setactive)
     controlchannel.send(msg)
@@ -42,7 +43,7 @@ proc main*() =
   buttonbox.add(startbutton)
 
   proc onstopbutton() =
-    echo("stop pressed")
+    #echo("stop pressed")
     #stopThread()
     var msg = ControlMessage(kind: setinactive)
     controlchannel.send(msg)
