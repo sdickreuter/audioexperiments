@@ -1,11 +1,10 @@
-#import strutils, times, locks
+import strutils, times, locks
 import audiotypes
-#import audioplayer
+import audioplayer
 import math
-#import os
 
 # modified from https://github.com/jlp765/seqmath
-proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32] =
+proc linspace(start, stop: int, endpoint = true): seq[float32] =
   var 
     step = float(start)
     diff: float
@@ -23,22 +22,22 @@ proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32
       step += diff
 
 
+const freq = 440
 const pi = 3.141592653589
 
 var
   generatorthread: Thread[void]
   currentframe: int = 0
-  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:0.3,rightvol:0.3)
+  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:1.0,rightvol:1.0)
 
 
 proc runthread {.thread.} =
   var 
-    t : array[framesPerBuffer, float32]
-    leftdata : array[framesPerBuffer, float32]
-    rightdata : array[framesPerBuffer, float32]
+    t : seq[float32]
+    leftdata : seq[float32]
+    rightdata : seq[float32]
     success: bool
     msg : ControlMessage 
-    active: bool = false
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -53,73 +52,54 @@ proc runthread {.thread.} =
       of rightvol:
         params.rightvol = msg.rvol
       of setactive:
-        if active==false: 
-          active = true
-          currentframe = 0
-      of setinactive: 
-          if active:
-            active = false 
+        echo("bla")
+      of setinactive:
+        echo("bla")
       of terminate:
         audiochannel.send(AudioMessage(kind: stop))
         break
     
-    if active:
-      if audiochannel.peek() < 10:
-        
-        t = linspace(currentframe, currentframe + int(framesPerBuffer))
-        for i in 0..<framesPerBuffer: 
-          t[i] /= float32(sampleRate)
-        
-        for i in 0..<framesPerBuffer: 
-          leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol
-          rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol
+    if audiochannel.peek() < 10:
+      
+      t = linspace(currentframe, currentframe + int(framesPerBuffer))
+      for i in 0..<framesPerBuffer: 
+        t[i] /= float32(sampleRate)
+      
+      for i in 0..<framesPerBuffer: 
+        leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol*0.15
+        rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol*0.15
 
-        var msg = AudioMessage(kind: audio)
-        msg.left = leftdata
-        msg.right = rightdata
-        audiochannel.send(msg)
-        currentframe += int(framesPerBuffer)
-    else:
-      if audiochannel.peek() < 2:
-        audiochannel.send(AudioMessage(kind: silent))
-
-    # if t[framesPerBuffer-1] > 2:
-    #   var msg = ControlMessage(kind: rightfreq)
-    #   msg.rfreq = 348
-    #   controlchannel.send(msg)
-
-    # if t[framesPerBuffer-1] > 5:
-    #   controlchannel.send(ControlMessage(kind: stopthread))
+      var msg = AudioMessage(kind: audio)
+      msg.left = leftdata
+      msg.right = rightdata
+      audiochannel.send(msg)
+      currentframe += int(framesPerBuffer)
 
 
-proc terminateThread* {.noconv.} =
+    if t[framesPerBuffer-1] > 2:
+      var msg = ControlMessage(kind: rightfreq)
+      msg.rfreq = 444
+      controlchannel.send(msg)
+
+    if t[framesPerBuffer-1] > 5:
+      controlchannel.send(ControlMessage(kind: terminate))
+
+
+proc stopThread* {.noconv.} =
+  joinThread(generatorthread)
   audiochannel.send(AudioMessage(kind: stop))
-  if generatorthread.running():
-    controlchannel.send(ControlMessage(kind: terminate))
-    joinThread(generatorthread)
   #close(audiochannel)
-
-
-#proc stopThread* {.noconv.} =
-#  if generatorthread.running():
-#    joinThread(generatorthread)
-#  audiochannel.send(AudioMessage(kind: stop))
-#  #close(audiochannel)
-
   
 proc startThread* {.noconv.} =
-  if generatorthread.running == false:
-    generatorthread.createThread(runthread)
-    #if audiochannel.peek() > 8: 
-
-
+  generatorthread.createThread(runthread)
+  initstream()
+  if audiochannel.peek() > 8: 
+    startstream()
 
 # Initialize module
-addQuitProc(terminateThread)
+addQuitProc(stopThread)
 audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
-  initstream()
   startThread()
-  startstream()

@@ -9,8 +9,8 @@ type
   AudioMessage* = object
     case kind*: AudioMessageKind
     of audio:
-      left*: array[framesPerBuffer, float32]
-      right*: array[framesPerBuffer, float32]
+      left*: seq[float32]
+      right*: seq[float32]
     of silent:
       nil
     of stop:
