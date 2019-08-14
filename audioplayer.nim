@@ -17,7 +17,7 @@ type
 
 
 var
-  phase = (left: 0.cfloat, right: 0.cfloat)
+  phase = (left: 0.float32, right: 0.float32)
   stream: PStream
 
 
@@ -30,6 +30,7 @@ proc stopstream*() =
   check(PA.StopStream(stream))
 
 
+#[
 var streamCallback = proc(
     inBuf, outBuf: pointer,
     framesPerBuf: culong,
@@ -39,17 +40,19 @@ var streamCallback = proc(
   var
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     phase = cast[ptr TPhase](userData)
+    msg : AudioMessage 
+    A: array[framesPerBuffer, float32]
 
-  var msg : AudioMessage 
   msg = audiochannel.recv()
   case msg.kind
     of audio:
       #echo("got data")
+      A = msg.left
       for i in 0 ..< framesPerBuf.int:
         outBuf[i] = phase[]
-
-        phase.left = msg.left[i]
-        phase.right = msg.right[i]
+        phase.left = A[i]
+        #phase.left = msg.left[i]
+        #phase.right = msg.right[i]
     of silent:
       for i in 0 ..< framesPerBuf.int:
         outBuf[i] = phase[]
@@ -61,6 +64,40 @@ var streamCallback = proc(
       stopstream()
   
   scrContinue.cint
+]#
+
+
+proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr TStreamCallbackTimeInfo,
+    statusFlags: TStreamCallbackFlags, userData: pointer): cint {.cdecl.} =
+
+  var
+    outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
+    inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
+    phase = cast[ptr TPhase](userData)
+    msg : AudioMessage 
+
+  msg = audiochannel.recv()
+  case msg.kind
+    of audio:
+      #echo("got data")
+      for i in 0 ..< framesPerBuf.int:
+        outBuf[i] = phase[]
+        phase.left = msg.left[i]
+        phase.right = msg.right[i]
+    of silent:
+      for i in 0 ..< framesPerBuf.int:
+        outBuf[i] = phase[]
+
+        phase.left = 0
+        phase.right = 0
+    of stop:
+      echo("stopaudio")
+      stopstream()
+
+  scrContinue.cint
+
+
+
 
 proc initstream*() = 
   check(PA.Initialize())
