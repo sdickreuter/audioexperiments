@@ -5,11 +5,25 @@ import illwill
 
 
 type
-  Slider*[T] = ref object
+  UIObject = ref object of RootObj
+    x,y,width: int
+    focus: bool
+
+proc setFocus*(obj: UIObject, focus: bool) =
+  obj.focus = focus
+
+proc handleinput(obj: UIObject, key: Key) {.base.} =
+  echo("handleinput")
+#  discard
+
+proc draw(tb: var TerminalBuffer, obj:UIObject) {.base.} =
+  echo("draw")
+#  discard
+
+type
+  Slider*[T] = ref object of UIObject
     min, max, value: T
     step: T
-    x,y,width: int
-
 
 proc newSlider*[T](min, max, step, value: T; x,y,width: int): Slider[T] =
   result = new(Slider[T])
@@ -20,8 +34,28 @@ proc newSlider*[T](min, max, step, value: T; x,y,width: int): Slider[T] =
   result.x = x
   result.y = y
   result. width = width
+  result.focus = false
 
-proc draw*[T](tb: var TerminalBuffer, slider:Slider[T]) =
+proc inc*(slider: Slider) =
+  slider.value += slider.step
+  if slider.value > slider.max:
+    slider.value = slider.max
+
+proc dec*(slider: Slider) =
+  slider.value -= slider.step
+  if slider.value < slider.min:
+    slider.value = slider.min
+
+method handleinput(slider: Slider, key: Key) =
+  case key  
+  of Key.Right:
+    slider.inc()
+  of Key.Left:
+    slider.dec()
+  else:
+    discard
+
+method draw*[T](tb: var TerminalBuffer, slider:Slider[T]) =
   var 
     pos: int
 
@@ -39,6 +73,34 @@ proc draw*[T](tb: var TerminalBuffer, slider:Slider[T]) =
   #tb.drawHorizLine(slider.x+1, slider.x+1+pos, slider.y+1, doubleStyle=false)
   tb.setForegroundColor(fgBlack)
   tb.write(slider.x+int(slider.width/2), slider.y,$slider.value)
+
+
+
+type
+  UIGroup = ref object
+    members : seq[UIObject]
+
+proc newUIGroup(): UIGroup =
+  result = new(UIGroup)
+  result.members = @[]
+
+proc add(g: UIGroup, obj: UIObject) =
+  g.members.add(obj)
+
+proc unfocusall(g: UIGroup) =
+  for obj in g.members:
+    obj.setFocus(false)
+
+method handleinput(g: UIGroup, key: Key) =
+  for obj in g.members:
+    if obj.focus:
+      obj.handleinput(key)
+
+method draw(tb: var TerminalBuffer, g: UIGroup) =
+  for obj in g.members:
+    tb.draw(obj)
+
+
 
 # 1. Initialise terminal in fullscreen mode and make sure we restore the state
 # of the terminal state when exiting.
@@ -67,10 +129,10 @@ tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
                " or ", fgYellow, "Q", fgWhite, " to quit")
 tb.write(2, 3, "Press ", fgYellow, "S", fgWhite, " to Start/Stop Playback")
 
-var slider = newSlider[int](0,100,1,60,1,10,25)
-tb.draw(slider)
+var g = newUIGroup()
+var slider = newSlider[int](min=0,max=100,step=1,value=60,x=1,y=10,width=25)
 
-
+g.add(slider)
                
 
 # 4. This is how the main event loop typically looks like: we keep polling for
@@ -82,15 +144,9 @@ while true:
   case key
   of Key.None: discard
   of Key.Escape, Key.Q: exitProc()
-  of Key.Right:
-    slider.value += 1
-  of Key.Left:
-    slider.value -= 1
   else:
-    tb.write(8, 5, ' '.repeat(31))
-    tb.write(2, 5, resetStyle, "Key pressed: ", fgGreen, $key)
+    g.handleinput(key)
 
-
-  tb.draw(slider)
+  tb.draw(g)
   tb.display()
-  sleep(20)
+  sleep(10)
