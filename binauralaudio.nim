@@ -14,8 +14,8 @@ proc main*() =
   mainwin.margined = true
 
   mainwin.onClosing = (proc (): bool = 
-    #stopThread()
-    terminateThread()
+    stopThread()
+    #terminateThread()
     terminatestream()
     return true)
 

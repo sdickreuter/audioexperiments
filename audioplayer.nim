@@ -1,6 +1,8 @@
-## Author: Erik Johansson Andersson
-## This file is in the public domain
-## See COPYING.txt in project root for details
+# the following is based on the work of Fabian Keller 
+# https://github.com/bluenote10/PortAudioLoopback/blob/master/loopback.nim
+# and
+# Erik Johansson Andersson
+# https://bitbucket.org/BitPuffin/nim-portaudio/src/761fb0007245e5c3de576e69d4885442c5bf3d49/examples/saw_out.nim?at=default&fileviewer=file-view-default
 
 import portaudio as PA
 import audiotypes
@@ -39,10 +41,10 @@ var streamCallback = proc(
     userData: pointer): cint {.cdecl.} =
   var
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
+    inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
     phase = cast[ptr TPhase](userData)
-    msg : AudioMessage 
-    A: array[framesPerBuffer, float32]
 
+  var msg : AudioMessage 
   msg = audiochannel.recv()
   case msg.kind
     of audio:
@@ -93,7 +95,7 @@ proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr 
     of stop:
       echo("stopaudio")
       stopstream()
-
+  
   scrContinue.cint
 
 
