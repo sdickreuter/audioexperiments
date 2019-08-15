@@ -5,12 +5,26 @@
 import portaudio as PA
 import audiotypes
 import audiogenerator
+import locks
+
+var
+  stream: PStream
 
 
 proc check(err: TError|TErrorCode) =
   if cast[TErrorCode](err) != PA.NoError:
     raise newException(Exception, $PA.GetErrorText(err))
 
+proc terminatestream*() =
+  check(PA.StopStream(stream))
+  check(PA.CloseStream(stream))
+  check(PA.Terminate())
+  #joinThread(receiverthread)
+
+
+proc stopstream*() =
+  check(PA.StopStream(stream))
+  #joinThread(receiverthread)
 
 type
   TPhase = tuple[left, right: float32]
@@ -18,18 +32,45 @@ type
 
 var
   phase = (left: 0.cfloat, right: 0.cfloat)
-  stream: PStream
 
+  receiverthread: Thread[void]
+  L : Lock
+  leftdata : seq[float32]
+  rightdata : seq[float32]
+  consumed : bool = false
 
-proc terminatestream*() =
-  check(PA.StopStream(stream))
-  check(PA.CloseStream(stream))
-  check(PA.Terminate())
+L.initLock()
 
-proc stopstream*() =
-  check(PA.StopStream(stream))
+proc runthread {.thread.} =
+  var
+    running : bool = true
 
+  while true:
+        
+    if consumed:
+      let msg: AudioMessage = recv(audiochannel)
+    #echo(msg.kind)
 
+      case msg.kind
+      of audio:
+          L.acquire()
+          for i in 0 ..< framesPerBuffer:
+            leftdata.add(msg.left[i])
+            rightdata.add(msg.right[i])
+          consumed = false
+          L.release()
+      of silent:
+        L.acquire()
+        for i in 0 ..< framesPerBuffer:
+          leftdata.add(0)
+          rightdata.add(0)
+          consumed = false
+        L.release()
+      of stop:
+        echo("stopaudio")
+        stopstream()
+        break
+  
 var streamCallback = proc(
     inBuf, outBuf: pointer,
     framesPerBuf: culong,
@@ -40,24 +81,13 @@ var streamCallback = proc(
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     phase = cast[ptr TPhase](userData)
 
-  echo(audiochannel.peek())
-  let msg: AudioMessage = recv(audiochannel)
-  #echo(msg.kind)
-
-  case msg.kind
-    of audio:
-      for i in 0 ..< framesPerBuf.int:
-        outBuf[i] = phase[]
-        phase.left = msg.left[i]
-        phase.right = msg.right[i]
-    of silent:
-      for i in 0 ..< framesPerBuf.int:
-        outBuf[i] = phase[]
-        phase.left = 0
-        phase.right = 0
-    of stop:
-      echo("stopaudio")
-      stopstream()
+  L.acquire()
+  for i in 0 ..< framesPerBuf.int:
+    outBuf[i] = phase[]
+    phase.left = leftdata[i]
+    phase.right = rightdata[i]
+  consumed = true
+  L.release()
   
   scrContinue.cint
 
@@ -74,6 +104,7 @@ proc initstream*() =
 
 proc startstream*() =
   check(PA.StartStream(stream))
+  receiverthread.createThread(runthread)
   #PA.Sleep(2000)
 
 
