@@ -20,8 +20,12 @@ proc main*() =
     return true)
 
   initstream()
+  echo("stream initiated")
   startThread()
+  echo("thread started")
   startstream()
+  echo("stream started")
+
 
 
   let box = newVerticalBox(true)

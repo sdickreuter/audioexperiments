@@ -38,6 +38,7 @@ proc runthread {.thread.} =
     rightdata : seq[float32]
     success: bool
     msg : ControlMessage 
+    active: bool = false
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -52,37 +53,33 @@ proc runthread {.thread.} =
       of rightvol:
         params.rightvol = msg.rvol
       of setactive:
-        echo("bla")
+        currentframe = 0
+        active = true
       of setinactive:
-        echo("bla")
+        active = false
       of terminate:
         audiochannel.send(AudioMessage(kind: stop))
         break
     
-    if audiochannel.peek() < 10:
-      
+    if audiochannel.peek() < 5:
       t = linspace(currentframe, currentframe + int(framesPerBuffer))
       for i in 0..<framesPerBuffer: 
         t[i] /= float32(sampleRate)
-      
-      for i in 0..<framesPerBuffer: 
-        leftdata.add( sin(params.leftfreq*(2*pi)*t[i])*params.leftvol*0.15)
-        rightdata.add( sin(params.rightfreq*(2*pi)*t[i])*params.rightvol*0.15)
 
-      var msg = AudioMessage(kind: audio)
-      msg.left = leftdata
-      msg.right = rightdata
-      audiochannel.send(msg)
-      currentframe += int(framesPerBuffer)
+      if active:
+        for i in 0..<framesPerBuffer: 
+          leftdata.add( sin(params.leftfreq*(2*pi)*t[i])*params.leftvol)
+          rightdata.add( sin(params.rightfreq*(2*pi)*t[i])*params.rightvol)
 
-
-    if t[framesPerBuffer-1] > 2:
-      var msg = ControlMessage(kind: rightfreq)
-      msg.rfreq = 444
-      controlchannel.send(msg)
-
-    if t[framesPerBuffer-1] > 5:
-      controlchannel.send(ControlMessage(kind: terminate))
+        var msg = AudioMessage(kind: audio)
+        msg.left = leftdata
+        msg.right = rightdata
+        audiochannel.send(msg)
+        echo("audio sent")
+        currentframe += int(framesPerBuffer)
+      else:
+        var msg = AudioMessage(kind: silent)
+        audiochannel.send(msg)
 
 
 proc stopThread* {.noconv.} =
@@ -92,12 +89,11 @@ proc stopThread* {.noconv.} =
   
 proc startThread* {.noconv.} =
   generatorthread.createThread(runthread)
-  initstream()
-  if audiochannel.peek() > 8: 
+  if audiochannel.peek() > 3: 
     startstream()
 
 # Initialize module
-addQuitProc(stopThread)
+#addQuitProc(stopThread)
 audiochannel.open()
 controlchannel.open()
 

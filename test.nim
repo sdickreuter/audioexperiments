@@ -1,61 +1,26 @@
-## Author: Erik Johansson Andersson
-## This file is in the public domain
-## See COPYING.txt in project root for details
+const framesPerBuffer = 32
 
-import portaudio as PA
+proc linspace(start, stop: int, endpoint = true): seq[float32] =
+  var 
+    step = float(start)
+    diff: float
+  if endpoint == true:
+    diff = float(stop - start) / float(framesPerBuffer - 1)
+  else:
+    diff = float(stop - start) / float(framesPerBuffer)
+  if diff < 0:
+    # in case start is bigger than stop, return an empty sequence
+    return 
+  else:
+    for i in 0..<framesPerBuffer:
+      result.add(step)
+      # for every element calculate new value for next iteration
+      step += diff
 
-type
-  TPhase = tuple[left, right: float32]
+var t : seq[float32]
+t = linspace(0, 1)
 
-var streamCallback = proc(
-    inBuf, outBuf: pointer,
-    framesPerBuf: culong,
-    timeInfo: ptr TStreamCallbackTimeInfo,
-    statusFlags: TStreamCallbackFlags,
-    userData: pointer): cint {.cdecl.} =
-  var
-    outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
-    phase = cast[ptr TPhase](userData)
-  for i in 0.. <framesPerBuf.int:
-    outBuf[i] = phase[]
+echo(len(t))
 
-    # Use a different pitch for each channel.
-    phase.left += 0.01
-    phase.right += 0.03
-
-    if phase.left >= 1:
-      phase.left = -1
-
-    if phase.right >= 1:
-      phase.right = -1
-
-  # Lower the amplitude (volume).
-  for i in 0.. <framesPerBuf.int:
-    outBuf[i].left *= 0.1
-    outBuf[i].right *= 0.1
-
-  scrContinue.cint
-
-proc check(err: TError|TErrorCode) =
-  if cast[TErrorCode](err) != PA.NoError:
-    raise newException(Exception, $PA.GetErrorText(err))
-
-
-var
-  phase = (left: 0.cfloat, right: 0.cfloat)
-  stream: PStream
-
-check(PA.Initialize())
-check(PA.OpenDefaultStream(cast[PStream](stream.addr),
-                           numInputChannels = 0,
-                           numOutputChannels = 2,
-                           sampleFormat = sfFloat32,
-                           sampleRate = 44_100,
-                           framesPerBuffer = 256,
-                           streamCallback = streamCallback,
-                           userData = cast[pointer](phase.addr)))
-check(PA.StartStream(stream))
-PA.Sleep(2000)
-check(PA.StopStream(stream))
-check(PA.CloseStream(stream))
-check(PA.Terminate())
+for x in t:
+  echo(x)

@@ -23,6 +23,7 @@ var
   stream: PStream
 
 
+
 proc terminatestream*() =
   check(PA.StopStream(stream))
   check(PA.CloseStream(stream))
@@ -46,17 +47,18 @@ var streamCallback = proc(
 
   var msg : AudioMessage 
   msg = audiochannel.recv()
+  echo(msg.kind)
   case msg.kind
     of audio:
-      #echo("got data")
-      for i in 0 ..< framesPerBuf.int:
+      echo("got audio")
+      #for i in 0 ..< framesPerBuf.int:
+      for i in 0 ..< framesPerBuffer:
         outBuf[i] = phase[]
         phase.left = msg.left[i]
         phase.right = msg.right[i]
     of silent:
       for i in 0 ..< framesPerBuf.int:
         outBuf[i] = phase[]
-
         phase.left = 0
         phase.right = 0
     of stop:
@@ -97,8 +99,6 @@ var streamCallback = proc(
 #   scrContinue.cint
 
 
-
-
 proc initstream*() = 
   check(PA.Initialize())
   check(PA.OpenDefaultStream(cast[PStream](stream.addr),
@@ -113,5 +113,4 @@ proc initstream*() =
 proc startstream*() =
   check(PA.StartStream(stream))
   #PA.Sleep(2000)
-
 
