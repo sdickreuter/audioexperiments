@@ -9,8 +9,8 @@ type
   AudioMessage* = object
     case kind*: AudioMessageKind
     of audio:
-      left*: seq[float32]
-      right*: seq[float32]
+      left*: array[framesPerBuffer, float32]
+      right*: array[framesPerBuffer, float32]
     of silent:
       nil
     of stop:
@@ -49,12 +49,3 @@ var controlchannel*: Channel[ControlMessage]
 controlchannel.open()
 audiochannel.open()
 
-
-# proc toString (kind: AudioMessageKind): string =
-#     case kind
-#     of audio:
-#       result = "audio"
-#     of silent:
-#       result = "silent"
-#     of stop:
-#       result = "stop"

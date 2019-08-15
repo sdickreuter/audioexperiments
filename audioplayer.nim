@@ -1,8 +1,6 @@
-# the following is based on the work of Fabian Keller 
-# https://github.com/bluenote10/PortAudioLoopback/blob/master/loopback.nim
-# and
-# Erik Johansson Andersson
-# https://bitbucket.org/BitPuffin/nim-portaudio/src/761fb0007245e5c3de576e69d4885442c5bf3d49/examples/saw_out.nim?at=default&fileviewer=file-view-default
+## Author: Erik Johansson Andersson
+## This file is in the public domain
+## See COPYING.txt in project root for details
 
 import portaudio as PA
 import audiotypes
@@ -19,7 +17,7 @@ type
 
 
 var
-  phase = (left: 0.float32, right: 0.float32)
+  phase = (left: 0.cfloat, right: 0.cfloat)
   stream: PStream
 
 
@@ -32,7 +30,6 @@ proc stopstream*() =
   check(PA.StopStream(stream))
 
 
-
 var streamCallback = proc(
     inBuf, outBuf: pointer,
     framesPerBuf: culong,
@@ -41,13 +38,9 @@ var streamCallback = proc(
     userData: pointer): cint {.cdecl, thread.} =
   var
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
-    inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
     phase = cast[ptr TPhase](userData)
-    #msg : AudioMessage 
-  
-  #msg = audiochannel.recv()
-  echo("callback start")
-  #echo(audiochannel.peek())
+
+  echo(audiochannel.peek())
   let msg: AudioMessage = recv(audiochannel)
   #echo(msg.kind)
 
@@ -63,41 +56,10 @@ var streamCallback = proc(
         phase.left = 0
         phase.right = 0
     of stop:
+      echo("stopaudio")
       stopstream()
   
-  result = scrContinue.cint
-
-
-
-# proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr TStreamCallbackTimeInfo,
-#     statusFlags: TStreamCallbackFlags, userData: pointer): cint {.cdecl.} =
-
-#   var
-#     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
-#     inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
-#     phase = cast[ptr TPhase](userData)
-#     msg : AudioMessage 
-
-#   msg = audiochannel.recv()
-#   case msg.kind
-#     of audio:
-#       #echo("got data")
-#       for i in 0 ..< framesPerBuf.int:
-#         outBuf[i] = phase[]
-#         phase.left = msg.left[i]
-#         phase.right = msg.right[i]
-#     of silent:
-#       for i in 0 ..< framesPerBuf.int:
-#         outBuf[i] = phase[]
-
-#         phase.left = 0
-#         phase.right = 0
-#     of stop:
-#       echo("stopaudio")
-#       stopstream()
-  
-#   scrContinue.cint
-
+  scrContinue.cint
 
 proc initstream*() = 
   check(PA.Initialize())
@@ -113,4 +75,5 @@ proc initstream*() =
 proc startstream*() =
   check(PA.StartStream(stream))
   #PA.Sleep(2000)
+
 

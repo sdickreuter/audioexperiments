@@ -1,10 +1,11 @@
-import strutils, times, locks, os
+import strutils, times, locks
 import audiotypes
 import audioplayer
 import math
+import os
 
 # modified from https://github.com/jlp765/seqmath
-proc linspace(start, stop: int, endpoint = true): seq[float32] =
+proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32] =
   var 
     step = float(start)
     diff: float
@@ -17,7 +18,7 @@ proc linspace(start, stop: int, endpoint = true): seq[float32] =
     return 
   else:
     for i in 0..<framesPerBuffer:
-      result.add(step)
+      result[i] = step
       # for every element calculate new value for next iteration
       step += diff
 
@@ -28,17 +29,17 @@ const pi = 3.141592653589
 var
   generatorthread: Thread[void]
   currentframe: int = 0
-  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:1.0,rightvol:1.0)
+  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:0.1,rightvol:0.1)
 
 
 proc runthread {.thread.} =
   var 
-    t : seq[float32]
-    leftdata : seq[float32]
-    rightdata : seq[float32]
+    t : array[framesPerBuffer, float32]
+    leftdata : array[framesPerBuffer, float32]
+    rightdata : array[framesPerBuffer, float32]
     success: bool
-    msg : ControlMessage 
     active: bool = false
+    msg : ControlMessage 
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -61,27 +62,25 @@ proc runthread {.thread.} =
         audiochannel.send(AudioMessage(kind: stop))
         break
     
-    if audiochannel.peek() < 5:
+    if audiochannel.peek() < 10:
+      
       t = linspace(currentframe, currentframe + int(framesPerBuffer))
       for i in 0..<framesPerBuffer: 
         t[i] /= float32(sampleRate)
-
+      
       if active:
-        
-        leftdata = @[]
-        rightdata = @[]
-        
         for i in 0..<framesPerBuffer: 
-          leftdata.add( sin(params.leftfreq*(2*pi)*t[i])*params.leftvol)
-          rightdata.add( sin(params.rightfreq*(2*pi)*t[i])*params.rightvol)
+          leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol
+          rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol
 
-        let msg = AudioMessage(kind: audio, left: leftdata, right: rightdata)
+        var msg = AudioMessage(kind: audio)
+        msg.left = leftdata
+        msg.right = rightdata
         audiochannel.send(msg)
-        echo("send message " & $msg.kind)
         currentframe += int(framesPerBuffer)
       else:
         var msg = AudioMessage(kind: silent)
-        audiochannel.send(msg)
+        audiochannel.send(msg)        
 
 
 proc stopThread* {.noconv.} =
@@ -112,4 +111,4 @@ when isMainModule:
   sleep(200)
   var msg = ControlMessage(kind: setactive)
   controlchannel.send(msg)
-  sleep(5000) 
+  sleep(2000) 
