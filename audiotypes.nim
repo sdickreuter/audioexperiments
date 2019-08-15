@@ -45,3 +45,16 @@ type
 
 var audiochannel*: Channel[AudioMessage]
 var controlchannel*: Channel[ControlMessage]
+
+controlchannel.open()
+audiochannel.open()
+
+
+# proc toString (kind: AudioMessageKind): string =
+#     case kind
+#     of audio:
+#       result = "audio"
+#     of silent:
+#       result = "silent"
+#     of stop:
+#       result = "stop"

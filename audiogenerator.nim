@@ -1,4 +1,4 @@
-import strutils, times, locks
+import strutils, times, locks, os
 import audiotypes
 import audioplayer
 import math
@@ -67,15 +67,17 @@ proc runthread {.thread.} =
         t[i] /= float32(sampleRate)
 
       if active:
+        
+        leftdata = @[]
+        rightdata = @[]
+        
         for i in 0..<framesPerBuffer: 
           leftdata.add( sin(params.leftfreq*(2*pi)*t[i])*params.leftvol)
           rightdata.add( sin(params.rightfreq*(2*pi)*t[i])*params.rightvol)
 
-        var msg = AudioMessage(kind: audio)
-        msg.left = leftdata
-        msg.right = rightdata
+        let msg = AudioMessage(kind: audio, left: leftdata, right: rightdata)
         audiochannel.send(msg)
-        echo("audio sent")
+        echo("send message " & $msg.kind)
         currentframe += int(framesPerBuffer)
       else:
         var msg = AudioMessage(kind: silent)
@@ -89,17 +91,25 @@ proc stopThread* {.noconv.} =
   
 proc startThread* {.noconv.} =
   generatorthread.createThread(runthread)
-  if audiochannel.peek() > 3: 
-    startstream()
+  while audiochannel.peek() < 5:
+    sleep(100)
+  #if audiochannel.peek() > 3: 
+  #  startstream()
 
 # Initialize module
 #addQuitProc(stopThread)
-audiochannel.open()
-controlchannel.open()
 
 when isMainModule:
-  var t : seq[float32] 
-  t = linspace(currentframe, currentframe + int(framesPerBuffer))
-  echo(len(t))
+  #var t : seq[float32] 
+  #t = linspace(currentframe, currentframe + int(framesPerBuffer))
+  #echo(len(t))
+  initstream()
+  echo("stream initiated")
   startThread()
-  
+  echo("thread started")
+  startstream()
+  echo("stream started")
+  sleep(200)
+  var msg = ControlMessage(kind: setactive)
+  controlchannel.send(msg)
+  sleep(5000) 
