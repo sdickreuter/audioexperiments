@@ -32,7 +32,7 @@ proc stopstream*() =
   check(PA.StopStream(stream))
 
 
-#[
+
 var streamCallback = proc(
     inBuf, outBuf: pointer,
     framesPerBuf: culong,
@@ -45,39 +45,6 @@ var streamCallback = proc(
     phase = cast[ptr TPhase](userData)
 
   var msg : AudioMessage 
-  msg = audiochannel.recv()
-  case msg.kind
-    of audio:
-      #echo("got data")
-      A = msg.left
-      for i in 0 ..< framesPerBuf.int:
-        outBuf[i] = phase[]
-        phase.left = A[i]
-        #phase.left = msg.left[i]
-        #phase.right = msg.right[i]
-    of silent:
-      for i in 0 ..< framesPerBuf.int:
-        outBuf[i] = phase[]
-
-        phase.left = 0
-        phase.right = 0
-    of stop:
-      echo("stopaudio")
-      stopstream()
-  
-  scrContinue.cint
-]#
-
-
-proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr TStreamCallbackTimeInfo,
-    statusFlags: TStreamCallbackFlags, userData: pointer): cint {.cdecl.} =
-
-  var
-    outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
-    inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
-    phase = cast[ptr TPhase](userData)
-    msg : AudioMessage 
-
   msg = audiochannel.recv()
   case msg.kind
     of audio:
@@ -97,6 +64,37 @@ proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr 
       stopstream()
   
   scrContinue.cint
+
+
+
+# proc streamCallback(inBuf, outBuf: pointer, framesPerBuf: culong, timeInfo: ptr TStreamCallbackTimeInfo,
+#     statusFlags: TStreamCallbackFlags, userData: pointer): cint {.cdecl.} =
+
+#   var
+#     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
+#     inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
+#     phase = cast[ptr TPhase](userData)
+#     msg : AudioMessage 
+
+#   msg = audiochannel.recv()
+#   case msg.kind
+#     of audio:
+#       #echo("got data")
+#       for i in 0 ..< framesPerBuf.int:
+#         outBuf[i] = phase[]
+#         phase.left = msg.left[i]
+#         phase.right = msg.right[i]
+#     of silent:
+#       for i in 0 ..< framesPerBuf.int:
+#         outBuf[i] = phase[]
+
+#         phase.left = 0
+#         phase.right = 0
+#     of stop:
+#       echo("stopaudio")
+#       stopstream()
+  
+#   scrContinue.cint
 
 
 

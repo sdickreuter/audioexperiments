@@ -17,7 +17,7 @@ proc linspace(start, stop: int, endpoint = true): seq[float32] =
     return 
   else:
     for i in 0..<framesPerBuffer:
-      result[i] = step
+      result.add(step)
       # for every element calculate new value for next iteration
       step += diff
 
@@ -66,8 +66,8 @@ proc runthread {.thread.} =
         t[i] /= float32(sampleRate)
       
       for i in 0..<framesPerBuffer: 
-        leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol*0.15
-        rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol*0.15
+        leftdata.add( sin(params.leftfreq*(2*pi)*t[i])*params.leftvol*0.15)
+        rightdata.add( sin(params.rightfreq*(2*pi)*t[i])*params.rightvol*0.15)
 
       var msg = AudioMessage(kind: audio)
       msg.left = leftdata
@@ -102,4 +102,8 @@ audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
+  var t : seq[float32] 
+  t = linspace(currentframe, currentframe + int(framesPerBuffer))
+  echo(len(t))
   startThread()
+  
