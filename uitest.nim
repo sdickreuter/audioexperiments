@@ -1,6 +1,6 @@
 # This is the example code from the README.
 
-import os, strutils, unicode 
+import os, strformat, unicode 
 import illwill
 
 
@@ -12,21 +12,22 @@ type
 proc setFocus*(obj: UIObject, focus: bool) =
   obj.focus = focus
 
-proc handleinput(obj: UIObject, key: Key) {.base.} =
+method handleinput(obj: UIObject, key: Key) {.base.} =
   echo("handleinput")
-#  discard
+  #quit("please overwrite method handleinput")
 
-proc draw(tb: var TerminalBuffer, obj:UIObject) {.base.} =
+
+method draw(obj:UIObject, tb: var TerminalBuffer) {.base.} =
   echo("draw")
-#  discard
+  #quit("please overwrite method draw")
 
 type
-  Slider*[T] = ref object of UIObject
-    min, max, value: T
-    step: T
+  Slider* = ref object of UIObject
+    min, max, value: int
+    step: int
 
-proc newSlider*[T](min, max, step, value: T; x,y,width: int): Slider[T] =
-  result = new(Slider[T])
+proc newSlider*(min, max, step, value: int; x,y,width: int): Slider =
+  result = new(Slider)
   result.min = min
   result.max = max
   result.step = step
@@ -55,14 +56,18 @@ method handleinput(slider: Slider, key: Key) =
   else:
     discard
 
-method draw*[T](tb: var TerminalBuffer, slider:Slider[T]) =
+method draw*(slider:Slider, tb: var TerminalBuffer) =
   var 
     pos: int
 
   tb.setForegroundColor(fgBlack, true)
   tb.drawRect(slider.x, slider.y, slider.x+slider.width+1, slider.y+2,doubleStyle=true)
   pos = int( ( (slider.value - slider.min) / (slider.max - slider.min) ) * float(slider.width))
-  tb.setForegroundColor(fgYellow)
+  if slider.focus:
+    tb.setForegroundColor(fgBlue)
+  else:
+    tb.setForegroundColor(fgYellow)
+ 
   for i in 0..<pos:
     tb.write(slider.x+1+i, slider.y+1,"█")
   
@@ -70,19 +75,20 @@ method draw*[T](tb: var TerminalBuffer, slider:Slider[T]) =
   for i in pos..<slider.width:
     tb.write(slider.x+1+i, slider.y+1,"█")
 
-  #tb.drawHorizLine(slider.x+1, slider.x+1+pos, slider.y+1, doubleStyle=false)
   tb.setForegroundColor(fgBlack)
-  tb.write(slider.x+int(slider.width/2), slider.y,$slider.value)
+  tb.write(slider.x+int(slider.width/2), slider.y,fmt"{slider.value:>10}")
 
 
 
 type
   UIGroup = ref object
     members : seq[UIObject]
+    focus_index: int
 
 proc newUIGroup(): UIGroup =
   result = new(UIGroup)
   result.members = @[]
+  result.focus_index = 0
 
 proc add(g: UIGroup, obj: UIObject) =
   g.members.add(obj)
@@ -91,14 +97,44 @@ proc unfocusall(g: UIGroup) =
   for obj in g.members:
     obj.setFocus(false)
 
-method handleinput(g: UIGroup, key: Key) =
-  for obj in g.members:
-    if obj.focus:
-      obj.handleinput(key)
+proc setFocusto(g: UIGroup, index: int) =
+  if index >= low(g.members) and index <= high(g.members):
+    g.unfocusall()
+    g.members[index].setFocus(true)
+    g.focus_index = index
 
-method draw(tb: var TerminalBuffer, g: UIGroup) =
+proc incFocus(g: UIGroup) =
+  var index: int
+  index = g.focus_index + 1
+  if index > high(g.members):
+    index = low(g.members) 
+  g.unfocusall()
+  g.members[index].setFocus(true)
+  g.focus_index = index
+
+proc decFocus(g: UIGroup) =
+  var index: int  
+  index = g.focus_index - 1
+  if index < low(g.members):
+    index = high(g.members)
+  g.unfocusall()
+  g.members[index].setFocus(true)
+  g.focus_index = index
+
+proc handleinput(g: UIGroup, key: Key) =
+  case key 
+  of Key.Up:
+    g.incFocus()
+  of Key.Down:
+    g.decFocus()
+  else:
+    for obj in g.members:
+      if obj.focus:
+        obj.handleinput(key)
+
+proc draw(tb: var TerminalBuffer, g: UIGroup) =
   for obj in g.members:
-    tb.draw(obj)
+    obj.draw(tb)
 
 
 
@@ -130,10 +166,15 @@ tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
 tb.write(2, 3, "Press ", fgYellow, "S", fgWhite, " to Start/Stop Playback")
 
 var g = newUIGroup()
-var slider = newSlider[int](min=0,max=100,step=1,value=60,x=1,y=10,width=25)
 
-g.add(slider)
+var freqslider = newSlider(min= 10,max= 1000,step= 1,value= 440,x= 1,y= 10,width= 25)
+g.add(freqslider)
                
+var detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 14,width= 25)
+g.add(detuneslider)
+
+
+g.setFocusto(0)
 
 # 4. This is how the main event loop typically looks like: we keep polling for
 # user input (keypress events), do something based on the input, modify the
@@ -148,5 +189,6 @@ while true:
     g.handleinput(key)
 
   tb.draw(g)
+  #slider.draw(tb)
   tb.display()
   sleep(10)
