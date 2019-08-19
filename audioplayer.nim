@@ -35,13 +35,13 @@ var
 
   receiverthread: Thread[void]
   L : Lock
-  leftdata : seq[float32]
-  rightdata : seq[float32]
+  leftdata {.guard: L, gcsafe.} : seq[float32]
+  rightdata {.guard: L, gcsafe.} : seq[float32]
   consumed : bool = false
 
 L.initLock()
 
-proc runthread {.thread.} =
+proc runthread {.thread, gcsafe.} =
   var
     running : bool = true
 
@@ -53,19 +53,17 @@ proc runthread {.thread.} =
 
       case msg.kind
       of audio:
-          L.acquire()
+        {.locks: [L].}:
           for i in 0 ..< framesPerBuffer:
             leftdata.add(msg.left[i])
             rightdata.add(msg.right[i])
-          consumed = false
-          L.release()
+        consumed = false
       of silent:
-        L.acquire()
-        for i in 0 ..< framesPerBuffer:
-          leftdata.add(0)
-          rightdata.add(0)
-          consumed = false
-        L.release()
+        {.locks: [L].}:
+          for i in 0 ..< framesPerBuffer:
+            leftdata.add(0)
+            rightdata.add(0)
+        consumed = false
       of stop:
         echo("stopaudio")
         stopstream()
@@ -81,13 +79,12 @@ var streamCallback = proc(
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     phase = cast[ptr TPhase](userData)
 
-  L.acquire()
-  for i in 0 ..< framesPerBuf.int:
-    outBuf[i] = phase[]
-    phase.left = leftdata[i]
-    phase.right = rightdata[i]
+  {.locks: [L].}:
+    for i in 0 ..< framesPerBuf.int:
+      outBuf[i] = phase[]
+      phase.left = leftdata[i]
+      phase.right = rightdata[i]
   consumed = true
-  L.release()
   
   scrContinue.cint
 
