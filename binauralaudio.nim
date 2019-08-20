@@ -11,7 +11,6 @@ proc exitProc() {.noconv.} =
   illwillDeinit()
   showCursor()
   stopThread()
-  #terminateThread()
   terminatestream() 
   quit(0)
 
@@ -82,14 +81,6 @@ proc onchange_volume(slider: Slider) =
 volumeslider.onchange = onchange_volume 
 
 
-
-#proc ontoggle_octavebut(but: ToggleButton) =
-#  if but.toggled:
-#    detuneslider.min     
-#
-#octavebut.ontoggle = ontoggle_octavebut 
-
-
 g.add(startbut)
 g.add(freqslider)
 g.add(octavebut)
@@ -111,6 +102,5 @@ while true:
     g.handleinput(key)
 
   tb.draw(g)
-  #slider.draw(tb)
   tb.display()
   sleep(10)
