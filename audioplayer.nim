@@ -43,7 +43,9 @@ var
 
 
 leftbuff.add(0) # init seq
+discard leftbuff.pop()
 rightbuff.add(0) # init seq
+discard rightbuff.pop()
 initLock(sblock)
 
 
@@ -56,7 +58,7 @@ proc runthread {.thread.} =
     {.locks: [sblock].}: 
       if consumed:
         let msg: AudioMessage = recv(audiochannel)
-      #echo(msg.kind)
+        echo(msg.kind)
 
         case msg.kind
         of audio:
@@ -87,8 +89,8 @@ var streamCallback = proc(
   {.locks: [sblock].}:
     for i in 0 ..< framesPerBuf.int:
       outBuf[i] = phase[]
-      phase.left = ptrleftbuff[i]
-      phase.right = ptrrightbuff[i]
+      phase.left = ptrleftbuff[].pop()#ptrleftbuff[][i]
+      phase.right = ptrrightbuff[].pop()#ptrrightbuff[][i]
     consumed = true
   
   scrContinue.cint

@@ -1,26 +1,41 @@
-const framesPerBuffer = 32
+import locks, os, strformat, threadpool
 
-proc linspace(start, stop: int, endpoint = true): seq[float32] =
-  var 
-    step = float(start)
-    diff: float
-  if endpoint == true:
-    diff = float(stop - start) / float(framesPerBuffer - 1)
-  else:
-    diff = float(stop - start) / float(framesPerBuffer)
-  if diff < 0:
-    # in case start is bigger than stop, return an empty sequence
-    return 
-  else:
-    for i in 0..<framesPerBuffer:
-      result.add(step)
-      # for every element calculate new value for next iteration
-      step += diff
+var sblock: Lock
+var sharedbuff {.guard: sblock.}: seq[string] = newSeq[string](50)
+var ptrsharedbuff {.guard: sblock.}: ptr seq[string] = addr(sharedbuff)
 
-var t : seq[float32]
-t = linspace(0, 1)
+sharedbuff.add("") # init seq
+initLock(sblock)
 
-echo(len(t))
+var begin = true
 
-for x in t:
-  echo(x)
+proc setProc (thrName:string, pause: int, buff : ptr seq[string]) =
+  var i = 0
+  while begin:
+    {.locks: [sblock].}:
+      for j in 1..5:
+        buff[].add(fmt"{thrName}-{i}-{j}")
+    sleep(pause)
+    i += 1
+
+proc outProc (pause: int, buff : ptr seq[string]) =
+  var i = 0
+  while begin:
+    {.locks: [sblock].}:
+      while ptrsharedbuff[].len > 0:
+        echo buff[].pop()
+      sleep(pause)
+    i += 1
+
+echo "PRESS [ENTER] TO STOP AND EXIT..."
+
+spawn setProc("Thread One", 1000, ptrsharedbuff)
+spawn setProc("Thread Two", 2000, ptrsharedbuff)
+spawn outProc(3000, ptrsharedbuff)
+
+discard stdin.readLine()
+
+begin = false
+sync()
+
+deinitLock(sblock)
