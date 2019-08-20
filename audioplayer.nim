@@ -50,21 +50,21 @@ var streamCallback = proc(
   #echo(msg.kind)
   case msg.kind
     of audio:
-      echo("got audio")
+      #echo("got audio")
       #for i in 0 ..< framesPerBuf.int:
       for i in 0 ..< framesPerBuffer:
         outBuf[i] = phase[]
         phase.left = msg.left[i]
         phase.right = msg.right[i]
     of silent:
-      echo("got silent")
+      #echo("got silent")
       
       for i in 0 ..< framesPerBuffer:
         outBuf[i] = phase[]
         phase.left = 0.0
         phase.right = 0.0
     of stop:
-      echo("stopaudio")
+      #echo("stopaudio")
       stopstream()
   
   scrContinue.cint

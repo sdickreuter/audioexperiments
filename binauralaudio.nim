@@ -1,192 +1,116 @@
-# Test & show the new high level wrapper
+import os, strformat, strutils 
+import illwill, illwidgets
 
-import ui, os
 import audiotypes
 import audiogenerator
 import audioplayer
 
-
-proc main*() =
-  var mainwin: Window
-
-  
-  mainwin = newWindow("Binaural Audio Generator", 300, 180, false)
-  mainwin.margined = true
-
-  mainwin.onClosing = (proc (): bool = 
-    stopThread()
-    #terminateThread()
-    terminatestream()
-    return true)
-
-  initstream()
-  echo("stream initiated")
-  startThread()
-  echo("thread started")
-  startstream()
-  echo("stream started")
+# 1. Initialise terminal in fullscreen mode and make sure we restore the state
+# of the terminal state when exiting.
+proc exitProc() {.noconv.} =
+  illwillDeinit()
+  showCursor()
+  stopThread()
+  #terminateThread()
+  terminatestream() 
+  quit(0)
 
 
+initstream()
+startThread()
+startstream()
 
-  let box = newVerticalBox(true)
-  mainwin.setChild(box)
-  
+illwillInit(fullscreen=true)
+setControlCHook(exitProc)
+hideCursor()
 
-  let buttonbox = newHorizontalBox(true)
-  box.add(buttonbox)
-  
-  
+# 2. We will construct the next frame to be displayed in this buffer and then
+# just instruct the library to display its contents to the actual terminal
+# (double buffering is enabled by default; only the differences from the
+# previous frame will be actually printed to the terminal).
+var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
 
-  proc onstartbutton() =
-    #echo("start pressed")
-    #startThread()
-    var msg = ControlMessage(kind: setactive)
-    controlchannel.send(msg)
+# 3. Display some simple static UI that doesn't change from frame to frame.
+tb.setForegroundColor(fgBlack, true)
+tb.drawRect(0, 0, 40, 4)
+tb.drawHorizLine(2, 38, 3, doubleStyle=true)
 
-  let startbutton = newButton("Start",onstartbutton)
-  buttonbox.add(startbutton)
+tb.write(2, 1, fgWhite, "Binaural Tone Generator")
+tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
+               " or ", fgYellow, "Q", fgWhite, " to quit")
 
-  proc onstopbutton() =
-    #echo("stop pressed")
-    #stopThread()
-    var msg = ControlMessage(kind: setinactive)
-    controlchannel.send(msg)
+var g = newUIGroup()
 
-  let stopbutton = newButton("Stop",onstopbutton)
-  buttonbox.add(stopbutton)
+var 
+  startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label=" Start playing ")
+  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 9,width= 25,label="Frequency")
+  octavebut = newToggleButton(toggled = false, x = 1, y = 12, width = 19, label=" Detune one Octave ")
+  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 15,width= 25,label="Detune")
+  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= 18,width= 25,label="Volume")
+  detune_octave : bool = false
 
+proc ontoggle_start(but: ToggleButton) =
+  if but.toggled:
+    controlchannel.send(ControlMessage(kind: setactive))
+  else:
+    controlchannel.send(ControlMessage(kind: setinactive))
 
+startbut.ontoggle = ontoggle_start 
 
-  let freqbox = newHorizontalBox(true)
-  box.add(freqbox)
+proc onchange_freq(slider: Slider) =
+  if detune_octave:
+    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
+    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value*2 + detuneslider.value)))
+  else:
+    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
+    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value + detuneslider.value)))
 
-  var freqspinbox: Spinbox
-  var detunespinbox: Spinbox
+freqslider.onchange = onchange_freq 
+detuneslider.onchange = onchange_freq 
 
-  proc updatefreqs() = 
-    var msg = ControlMessage(kind: rightfreq)
-    msg.rfreq = float(freqspinbox.value)
-    controlchannel.send(msg)
-    msg = ControlMessage(kind: leftfreq)
-    msg.lfreq = float(freqspinbox.value+detunespinbox.value)
-    controlchannel.send(msg)
+proc ontoggle_octave(but: ToggleButton) =
+  detune_octave = but.toggled
+  onchange_freq(freqslider)
 
-
-  proc update_freqspinbox(value: int) =
-    freqspinbox.value = value
-    updatefreqs()
-
-  freqspinbox = newSpinbox(10, 5000, update_freqspinbox)
-  freqspinbox.value = 440
-  freqbox.add(newLabel("frequency:"))
-  freqbox.add(freqspinbox)
-
-  let detunebox = newHorizontalBox(true)
-  box.add(detunebox)
+octavebut.ontoggle = ontoggle_octave 
 
 
-  proc update_detunespinbox(value: int) =
-    detunespinbox.value = value
-    updatefreqs()
+proc onchange_volume(slider: Slider) =
+    controlchannel.send(ControlMessage(kind: rightvol, rvol: float(volumeslider.value)/100))
+    controlchannel.send(ControlMessage(kind: leftvol, lvol: float(volumeslider.value)/100))
 
-  detunespinbox = newSpinbox(-100, 100, update_detunespinbox)
-  detunespinbox.value = 0
-  detunebox.add(newLabel("detune:"))
-  detunebox.add(detunespinbox)
+volumeslider.onchange = onchange_volume 
 
 
 
-  let volumebox = newHorizontalBox(false)
-  box.add(volumebox)
-
-  var volslider: Slider
-
-  proc update_volslider(value: int) =
-    volslider.value = value
-    var msg = ControlMessage(kind: rightvol)
-    msg.rvol = float(volslider.value)/100
-    controlchannel.send(msg)
-    msg = ControlMessage(kind: leftvol)
-    msg.lvol = float(volslider.value)/100
-    controlchannel.send(msg)
-
-  volslider = newSlider(0, 100, update_volslider)
-  volslider.value = 30
-  volumebox.add(newLabel("volume:"))
-  volumebox.add(volslider,true)
+#proc ontoggle_octavebut(but: ToggleButton) =
+#  if but.toggled:
+#    detuneslider.min     
+#
+#octavebut.ontoggle = ontoggle_octavebut 
 
 
-  # let hbox = newHorizontalBox(true)
-  # box.add(hbox, true)
-  # var group = newGroup("Basic Controls")
-  # group.margined = true
-  # hbox.add(group, false)
-  # var inner = newVerticalBox(true)
-  # group.child = inner
-  # inner.add newButton("Button")
-  # inner.add newCheckbox("Checkbox")
-  # add(inner, newEntry("Entry"))
-  # add(inner, newLabel("Label"))
-  # inner.add newHorizontalSeparator()
-  # #inner.add newDatePicker()
-  # #inner.add newTimePicker()
-  # #inner.add newDateTimePicker()
-  # #inner.add newFontButton()
-  # #inner.add newColorButton()
-  # var inner2 = newVerticalBox()
-  # inner2.padded = true
-  # hbox.add inner2
-  # group = newGroup("Numbers", true)
-  # inner2.add group
-  # inner = newVerticalBox(true)
-  # group.child = inner
+g.add(startbut)
+g.add(freqslider)
+g.add(octavebut)
+g.add(detuneslider)
+g.add(volumeslider)
 
+g.setFocusto(0)
 
-  # var spinbox: Spinbox
-  # var slider: Slider
-  # var progressbar: ProgressBar
+# 4. This is how the main event loop typically looks like: we keep polling for
+# user input (keypress events), do something based on the input, modify the
+# contents of the terminal buffer (if necessary), and then display the new
+# frame.
+while true:
+  var key = getKey()
+  case key
+  of Key.None: discard
+  of Key.Escape, Key.Q: exitProc()
+  else:
+    g.handleinput(key)
 
-  # proc update(value: int) =
-  #   spinbox.value = value
-  #   slider.value = value
-  #   progressBar.value = value
-
-  # spinbox = newSpinbox(0, 100, update)
-  # inner.add spinbox
-  # slider = newSlider(0, 100, update)
-  # inner.add slider
-  # progressbar = newProgressBar()
-  # inner.add progressbar
-
-  # group = newGroup("Lists")
-  # group.margined = true
-  # inner2.add group
-
-  # inner = newVerticalBox()
-  # inner.padded = true
-  # group.child = inner
-  # var cbox = newCombobox()
-  # cbox.add "Combobox Item 1"
-  # cbox.add "Combobox Item 2"
-  # cbox.add "Combobox Item 3"
-  # inner.add cbox
-  # var ecbox = newEditableCombobox()
-  # ecbox.add "Editable Item 1"
-  # ecbox.add "Editable Item 2"
-  # ecbox.add "Editable Item 3"
-  # inner.add ecbox
-  # var rb = newRadioButtons()
-  # rb.add "Radio ButtoIn 1"
-  # rb.add "Radio Button 2"
-  # rb.add "Radio Button 3"
-  # inner.add rb, true
-  # var tab = newTab()
-  # tab.add "Page 1", newHorizontalBox()
-  # tab.add "Page 2", newHorizontalBox()
-  # tab.add "Page 3", newHorizontalBox()
-  # inner2.add tab, true
-  show(mainwin)
-  mainLoop()
-
-init()
-main()
+  tb.draw(g)
+  #slider.draw(tb)
+  tb.display()
+  sleep(10)

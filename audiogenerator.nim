@@ -84,8 +84,10 @@ proc runthread {.thread.} =
 
 
 proc stopThread* {.noconv.} =
+  controlchannel.send(ControlMessage(kind: terminate))
   joinThread(generatorthread)
-  audiochannel.send(AudioMessage(kind: stop))
+  #sleep(200)
+
   #close(audiochannel)
   
 proc startThread* {.noconv.} =
