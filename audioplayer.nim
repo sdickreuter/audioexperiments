@@ -29,45 +29,50 @@ proc stopstream*() =
 type
   TPhase = tuple[left, right: float32]
 
-
 var
   phase = (left: 0.cfloat, right: 0.cfloat)
-
   receiverthread: Thread[void]
-  L : Lock
-  leftdata {.guard: L, gcsafe.} : seq[float32]
-  rightdata {.guard: L, gcsafe.} : seq[float32]
-  consumed : bool = false
+  
+  #from https://forum.nim-lang.org/t/3896
+  sblock: Lock
+  leftbuff {.guard: sblock.}: seq[float32] = newSeq[float32](50)
+  ptrleftbuff {.guard: sblock.}: ptr seq[float32] = addr(leftbuff)
+  rightbuff {.guard: sblock.}: seq[float32] = newSeq[float32](50)
+  ptrrightbuff {.guard: sblock.}: ptr seq[float32] = addr(rightbuff)
+  consumed {.guard: sblock.}: bool = true
 
-L.initLock()
 
-proc runthread {.thread, gcsafe.} =
+leftbuff.add(0) # init seq
+rightbuff.add(0) # init seq
+initLock(sblock)
+
+
+proc runthread {.thread.} =
   var
     running : bool = true
 
   while true:
         
-    if consumed:
-      let msg: AudioMessage = recv(audiochannel)
-    #echo(msg.kind)
+    {.locks: [sblock].}: 
+      if consumed:
+        let msg: AudioMessage = recv(audiochannel)
+      #echo(msg.kind)
 
-      case msg.kind
-      of audio:
-        {.locks: [L].}:
-          for i in 0 ..< framesPerBuffer:
-            leftdata.add(msg.left[i])
-            rightdata.add(msg.right[i])
-        consumed = false
-      of silent:
-        {.locks: [L].}:
-          for i in 0 ..< framesPerBuffer:
-            leftdata.add(0)
-            rightdata.add(0)
-        consumed = false
-      of stop:
-        echo("stopaudio")
-        stopstream()
-        break
+        case msg.kind
+        of audio:
+            for i in 0 ..< framesPerBuffer:
+              ptrleftbuff[].add(msg.left[i])
+              ptrrightbuff[].add(msg.right[i])
+            consumed = false
+        of silent:
+            for i in 0 ..< framesPerBuffer:
+              ptrleftbuff[].add(0)
+              ptrrightbuff[].add(0)
+            consumed = false
+        of stop:
+          echo("stopaudio")
+          stopstream()
+          break
   
 var streamCallback = proc(
     inBuf, outBuf: pointer,
@@ -79,12 +84,12 @@ var streamCallback = proc(
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     phase = cast[ptr TPhase](userData)
 
-  {.locks: [L].}:
+  {.locks: [sblock].}:
     for i in 0 ..< framesPerBuf.int:
       outBuf[i] = phase[]
-      phase.left = leftdata[i]
-      phase.right = rightdata[i]
-  consumed = true
+      phase.left = ptrleftbuff[i]
+      phase.right = ptrrightbuff[i]
+    consumed = true
   
   scrContinue.cint
 
@@ -101,7 +106,9 @@ proc initstream*() =
 
 proc startstream*() =
   check(PA.StartStream(stream))
+  echo("starting receiver")
   receiverthread.createThread(runthread)
+  echo("receiver started")
   #PA.Sleep(2000)
 
 
