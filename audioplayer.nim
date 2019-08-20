@@ -39,7 +39,7 @@ var streamCallback = proc(
     framesPerBuf: culong,
     timeInfo: ptr TStreamCallbackTimeInfo,
     statusFlags: TStreamCallbackFlags,
-    userData: pointer): cint {.cdecl.} =
+    userData: pointer): cint {.cdecl, thread.} =
   var
     outBuf = cast[ptr array[0xffffffff, TPhase]](outBuf)
     inBuf = cast[ptr array[0xffffffff, TPhase]](inBuf)
@@ -47,7 +47,7 @@ var streamCallback = proc(
 
   var msg : AudioMessage 
   msg = audiochannel.recv()
-  echo(msg.kind)
+  #echo(msg.kind)
   case msg.kind
     of audio:
       echo("got audio")
@@ -57,10 +57,12 @@ var streamCallback = proc(
         phase.left = msg.left[i]
         phase.right = msg.right[i]
     of silent:
-      for i in 0 ..< framesPerBuf.int:
+      echo("got silent")
+      
+      for i in 0 ..< framesPerBuffer:
         outBuf[i] = phase[]
-        phase.left = 0
-        phase.right = 0
+        phase.left = 0.0
+        phase.right = 0.0
     of stop:
       echo("stopaudio")
       stopstream()
