@@ -1,8 +1,7 @@
-import strutils, times, locks
+import strutils, times, locks, os
 import audiotypes
 import audioplayer
 import math
-import os
 
 # modified from https://github.com/jlp765/seqmath
 proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32] =
@@ -38,8 +37,8 @@ proc runthread {.thread.} =
     leftdata : array[framesPerBuffer, float32]
     rightdata : array[framesPerBuffer, float32]
     success: bool
-    active: bool = false
     msg : ControlMessage 
+    active: bool = false
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -62,12 +61,11 @@ proc runthread {.thread.} =
         audiochannel.send(AudioMessage(kind: stop))
         break
     
-    if audiochannel.peek() < 10:
-      
+    if audiochannel.peek() < 5:
       t = linspace(currentframe, currentframe + int(framesPerBuffer))
       for i in 0..<framesPerBuffer: 
         t[i] /= float32(sampleRate)
-      
+
       if active:
         for i in 0..<framesPerBuffer: 
           leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol
@@ -77,33 +75,35 @@ proc runthread {.thread.} =
         msg.left = leftdata
         msg.right = rightdata
         audiochannel.send(msg)
+        echo("audio sent")
         currentframe += int(framesPerBuffer)
       else:
         var msg = AudioMessage(kind: silent)
-        audiochannel.send(msg)        
+        audiochannel.send(msg)
+        #echo("silent sent")
 
 
 proc stopThread* {.noconv.} =
+  controlchannel.send(ControlMessage(kind: terminate))
   joinThread(generatorthread)
-  audiochannel.send(AudioMessage(kind: stop))
+  #sleep(200)
+
   #close(audiochannel)
   
 proc startThread* {.noconv.} =
   generatorthread.createThread(runthread)
-  while audiochannel.peek() < 5:
-    sleep(100)
-  #if audiochannel.peek() > 3: 
-  #  startstream()
+  if audiochannel.peek() > 3: 
+    startstream()
 
 # Initialize module
 #addQuitProc(stopThread)
+audiochannel.open()
+controlchannel.open()
 
 when isMainModule:
-  #var t : seq[float32] 
-  #t = linspace(currentframe, currentframe + int(framesPerBuffer))
-  #echo(len(t))
-  initstream()
-  echo("stream initiated")
+  var t : seq[float32] 
+  t = linspace(currentframe, currentframe + int(framesPerBuffer))
+  echo(len(t))
   startThread()
   echo("thread started")
   startstream()

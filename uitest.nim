@@ -33,19 +33,30 @@ tb.write(2, 3, "Press ", fgYellow, "S", fgWhite, " to Start/Stop Playback")
 
 var g = newUIGroup()
 
-var startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label="Start playing")
+var 
+  startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label=" Start playing ")
+  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 9,width= 25,label="Frequency")
+  octavebut = newToggleButton(toggled = false, x = 1, y = 12, width = 19, label=" Detune one octave ")
+  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 15,width= 25,label="Detune")
+  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= 18,width= 25,label="Volume")
+
+proc ontoggle_startbut(but: ToggleButton) =
+  but.label = "toggled"
+
+startbut.ontoggle = ontoggle_startbut 
+
+#proc ontoggle_octavebut(but: ToggleButton) =
+#  if but.toggled:
+#    detuneslider.min     
+#
+#octavebut.ontoggle = ontoggle_octavebut 
+
+
 g.add(startbut)
-
-var freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 10,width= 25,label="Frequency")
 g.add(freqslider)
-               
-var detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 14,width= 25,label="Detune")
+g.add(octavebut)
 g.add(detuneslider)
-
-var volumeslider = newSlider(min= 0,max= 100,step= 1,value= 30,x= 1,y= 18,width= 25,label="Volume")
 g.add(volumeslider)
-
-
 
 g.setFocusto(0)
 
