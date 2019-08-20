@@ -75,7 +75,7 @@ proc runthread {.thread.} =
         msg.left = leftdata
         msg.right = rightdata
         audiochannel.send(msg)
-        echo("audio sent")
+        #echo("audio sent")
         currentframe += int(framesPerBuffer)
       else:
         var msg = AudioMessage(kind: silent)
@@ -92,8 +92,7 @@ proc stopThread* {.noconv.} =
   
 proc startThread* {.noconv.} =
   generatorthread.createThread(runthread)
-  if audiochannel.peek() > 3: 
-    startstream()
+
 
 # Initialize module
 #addQuitProc(stopThread)
@@ -101,9 +100,8 @@ audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
-  var t : seq[float32] 
-  t = linspace(currentframe, currentframe + int(framesPerBuffer))
-  echo(len(t))
+  initstream()
+  echo("stream initiated")
   startThread()
   echo("thread started")
   startstream()

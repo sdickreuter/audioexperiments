@@ -23,12 +23,11 @@ illwillInit(fullscreen=true)
 setControlCHook(exitProc)
 hideCursor()
 
-  initstream()
-  echo("stream initiated")
-  startThread()
-  echo("thread started")
-  startstream()
-  echo("stream started")
+# 2. We will construct the next frame to be displayed in this buffer and then
+# just instruct the library to display its contents to the actual terminal
+# (double buffering is enabled by default; only the differences from the
+# previous frame will be actually printed to the terminal).
+var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
 
 # 3. Display some simple static UI that doesn't change from frame to frame.
 tb.setForegroundColor(fgBlack, true)
@@ -41,24 +40,29 @@ tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
 
 var g = newUIGroup()
 
-  let buttonbox = newHorizontalBox(true)
-  box.add(buttonbox)
-  
-  
+var 
+  startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label=" Start playing ")
+  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 9,width= 25,label="Frequency")
+  octavebut = newToggleButton(toggled = false, x = 1, y = 12, width = 19, label=" Detune one Octave ")
+  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 15,width= 25,label="Detune")
+  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= 18,width= 25,label="Volume")
+  detune_octave : bool = false
 
-  proc onstartbutton() =
-    #echo("start pressed")
-    #startThread()
-    var msg = ControlMessage(kind: setactive)
-    controlchannel.send(msg)
+proc ontoggle_start(but: ToggleButton) =
+  if but.toggled:
+    controlchannel.send(ControlMessage(kind: setactive))
+  else:
+    controlchannel.send(ControlMessage(kind: setinactive))
 
 startbut.ontoggle = ontoggle_start 
 
-  proc onstopbutton() =
-    #echo("stop pressed")
-    #stopThread()
-    var msg = ControlMessage(kind: setinactive)
-    controlchannel.send(msg)
+proc onchange_freq(slider: Slider) =
+  if detune_octave:
+    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
+    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value*2 + detuneslider.value)))
+  else:
+    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
+    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value + detuneslider.value)))
 
 freqslider.onchange = onchange_freq 
 detuneslider.onchange = onchange_freq 
