@@ -30,8 +30,10 @@ hideCursor()
 var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
 
 # 3. Display some simple static UI that doesn't change from frame to frame.
-tb.setForegroundColor(fgBlack, true)
-tb.drawRect(0, 0, 40, 4)
+tb.setForegroundColor(fgWhite, true)
+tb.setBackgroundColor(bgBlack)
+
+tb.fill(0, 0, tb.width-1, tb.height-1)
 tb.drawHorizLine(2, 38, 3, doubleStyle=true)
 
 tb.write(2, 1, fgWhite, "Binaural Tone Generator")
