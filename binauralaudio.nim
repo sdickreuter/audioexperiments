@@ -31,6 +31,7 @@ var tb = newTerminalBuffer(terminalWidth(), terminalHeight())
 
 # 3. Display some simple static UI that doesn't change from frame to frame.
 tb.setForegroundColor(fgBlack, true)
+tb.setForegroundColor(fgWhite, true)
 tb.drawRect(0, 0, 40, 4)
 tb.drawHorizLine(2, 38, 3, doubleStyle=true)
 
