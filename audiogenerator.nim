@@ -34,8 +34,15 @@ proc runthread {.thread.} =
     msg : ControlMessage 
     active: bool = false
     params: GeneratorParams
-    
-  params = newGeneratorParams(leftfreq=220,rightfreq=220,leftvol=0.1,rightvol=0.1)
+    lfreq: float32 = 0
+    rfreq: float32 = 0
+
+
+
+  params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
+  #lfreq = params.leftfreq.get()/float32(sampleRate)
+  #rfreq = params.rightfreq.get()/float32(sampleRate)
+
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -67,16 +74,20 @@ proc runthread {.thread.} =
           t[i] /= float32(sampleRate)
 
         for i in 0..<framesPerBuffer: 
-          leftdata[i] = sin(params.leftfreq.get()*(2*PI)*t[i]) * params.leftvol.get()*params.fade.get()
-          rightdata[i] = sin(params.rightfreq.get()*(2*PI)*t[i]) * params.rightvol.get()*params.fade.get()
+          params.iterateParams(1/float32(sampleRate))
+
+          lfreq += params.leftfreq.get()/float32(sampleRate)
+          rfreq += params.rightfreq.get()/float32(sampleRate)
+
+          leftdata[i] = sin(lfreq*(2*PI)) * params.leftvol.get()*params.fade.get()
+          rightdata[i] = sin(rfreq*(2*PI)) * params.rightvol.get()*params.fade.get()
           #echo( $leftdata[i] & "  " & $rightdata[i])
           #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
-          echo( params.leftfreq.get()*(2*PI) )
+          #echo( params.leftfreq.get()*(2*PI) )
+          echo( $(lfreq) & "  " & $(rfreq))
           
 
-          params.iterateParams()
-
-        if params.fade.get() < 0.0001:
+        if params.fade.get() < 0.000001:
           active = false
 
         var msg = AudioMessage(kind: audio)
@@ -119,7 +130,7 @@ when isMainModule:
   sleep(50)
   controlchannel.send(ControlMessage(kind: setactive))
   sleep(100)
-  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 440))
+  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 441))
   sleep(100)
-  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 440))
+  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 880))
   sleep(100) 

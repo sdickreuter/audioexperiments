@@ -42,9 +42,8 @@ type
   ParamFader = object
     value: float32
     target: float32
-    dt: int64
-    t0: int64
-    t: int64
+    t1: float32
+    t: float32
 
 
   GeneratorParams* = object
@@ -55,30 +54,26 @@ type
     fade*: ParamFader
 
 
-proc newParamFader*(value: float32, dt: int64): ParamFader =
+proc newParamFader*(value: float32, t1: float32): ParamFader =
   result.value = value
   result.target = value
-  result.dt = dt
-  result.t0 = 0
+  result.t1 = t1
   result.t = 0
 
-proc iterate*(p: var ParamFader) =
+proc iterate*(p: var ParamFader, dt: float32) =
   var
-    tdiff: int64 = p.dt - (p.t - p.t0) 
-    diff: float32
+    tdiff: float32 = p.t1 - p.t 
+    diff: float32 = p.target - p.value
 
   if tdiff > 0:
-    diff = p.target - p.value
-    if diff > 0.0001:
-      p.value +=  diff/float32(tdiff)
-      p.t += 1
-    else:
+      p.value +=  dt*diff/tdiff
+      p.t += dt
+  else:
       p.value = p.target
-
 
 proc set*(p: var ParamFader, value: float32) =
   p.target = value
-  p.t0 = p.t
+  p.t = 0
 
 
 proc get*(p: ParamFader): float32 =
@@ -86,19 +81,19 @@ proc get*(p: ParamFader): float32 =
 
 
 proc newGeneratorParams*(leftfreq, rightfreq, leftvol, rightvol: float32): GeneratorParams =
-  result.leftfreq = newParamFader(leftfreq, int64(sampleRate*0.05))
-  result.rightfreq = newParamFader(rightfreq, int64(sampleRate*0.01))
-  result.leftvol = newParamFader(leftvol, int64(sampleRate*0.1))
-  result.rightvol = newParamFader(rightvol, int64(sampleRate*0.1))
-  result.fade = newParamFader(0, int64(sampleRate*0.05))
+  result.leftfreq = newParamFader(leftfreq, 0.01)
+  result.rightfreq = newParamFader(rightfreq, 0.01)
+  result.leftvol = newParamFader(leftvol, 0.01)
+  result.rightvol = newParamFader(rightvol, 0.01)
+  result.fade = newParamFader(0, 0.01)
 
 
-proc iterateParams*(p: var GeneratorParams) =
-  p.leftfreq.iterate()
-  p.rightfreq.iterate()
-  p.leftvol.iterate()
-  p.rightvol.iterate()
-  p.fade.iterate()
+proc iterateParams*(p: var GeneratorParams, dt: float32) =
+  p.leftfreq.iterate(dt)
+  p.rightfreq.iterate(dt)
+  p.leftvol.iterate(dt)
+  p.rightvol.iterate(dt)
+  p.fade.iterate(dt)
 
 
 var audiochannel*: Channel[AudioMessage]
