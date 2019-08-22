@@ -27,25 +27,17 @@ var
 
 proc runthread {.thread.} =
   var 
-    t : array[framesPerBuffer, float32]
+    #t : array[framesPerBuffer, float32]
     leftdata : array[framesPerBuffer, float32]
     rightdata : array[framesPerBuffer, float32]
     success: bool
     msg : ControlMessage 
     active: bool = false
     params: GeneratorParams
-    lfreq: float32 = 0
-    rfreq: float32 = 0
-    lphase: float32 = 0
-    rphase: float32 = 0
-    lphase2: float32 = 0
-    rphase2: float32 = 0
     lx, rx: float32 = 0
 
 
   params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
-  #lfreq = params.leftfreq.get()/float32(sampleRate)
-  #rfreq = params.rightfreq.get()/float32(sampleRate)
 
 
   while true:
@@ -53,10 +45,8 @@ proc runthread {.thread.} =
     if success:
       case msg.kind
       of leftfreq:
-        lfreq = 0
         params.leftfreq.set(msg.lfreq)
       of rightfreq:
-        rfreq = 0
         params.rightfreq.set(msg.rfreq)
       of leftvol:
         params.leftvol.set(msg.lvol)
@@ -75,58 +65,20 @@ proc runthread {.thread.} =
     
     if audiochannel.peek() < numberofBuffers:
       if active:
-        t = linspace(currentframe, currentframe + int(framesPerBuffer))
-        for i in 0..<framesPerBuffer: 
-          t[i] /= float32(sampleRate)
+        #t = linspace(currentframe, currentframe + int(framesPerBuffer))
+        #for i in 0..<framesPerBuffer: 
+        #  t[i] /= float32(sampleRate)
 
         for i in 0..<framesPerBuffer: 
           params.iterateParams(1/float32(sampleRate))
 
-          if params.leftfreq.fading:
-            lfreq += params.leftfreq.get()/float32(sampleRate)
-            lx = lfreq*(2*PI)+lphase2
-            leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
-            lphase = lx
-            #if i > 1.uint64:
-            #  if leftdata[i-1] > leftdata[i]:
-            #    lphase = lphase+PI
-            #else:
-            #  if leftdata[framesPerBuffer-1] > leftdata[0]:
-            #    lphase = lphase+PI
-          else:
-            lx = params.leftfreq.get()*(2*PI)*t[i]+lphase
-            leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
-            lphase2 = lx mod (params.leftfreq.get()*2*PI)
-            #lphase2 = lx
-            #if i > 1.uint64:
-            #  if leftdata[i-1] > leftdata[i]:
-            #    lphase2 = lphase2+PI
-            #else:
-            #  if leftdata[framesPerBuffer-1] > leftdata[0]:
-            #    lphase2 = lphase2+PI
-              
+          lx += ( params.leftfreq.get()/float32(sampleRate) ) * (2*PI)
+          lx = lx mod (2*PI)
+          leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
 
-          if params.rightfreq.fading:
-            rfreq += params.rightfreq.get()/float32(sampleRate)
-            rx = rfreq*(2*PI)+rphase2
-            rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
-            rphase = rx
-            #if i > 1.uint64:
-            #  if rightdata[i-1] > rightdata[i]:
-            #    rphase = rphase + PI
-            #else:
-            #  if rightdata[framesPerBuffer-1] > rightdata[0]:
-            #    rphase = rphase + PI
-          else:
-            rx = params.rightfreq.get()*(2*PI)*t[i]+rphase
-            rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
-            rphase2 = rx mod (params.rightfreq.get()*2*PI)
-            #if i > 1.uint64:
-            #  if rightdata[i-1] > rightdata[i]:
-            #    rphase2 = rphase2 + PI
-            #else:
-            #  if rightdata[framesPerBuffer-1] > rightdata[0]:
-            #    rphase2 = rphase2 + PI
+          rx = ( params.rightfreq.get()/float32(sampleRate) ) * (2*PI)
+          rx = rx mod (2*PI)
+          rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
 
           #echo( $leftdata[i] & "  " & $rightdata[i])
           #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
@@ -176,8 +128,8 @@ when isMainModule:
   echo("stream started")
   sleep(50)
   controlchannel.send(ControlMessage(kind: setactive))
-  sleep(100)
-  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 444))
-  sleep(100)
-  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 880))
-  sleep(100) 
+  sleep(1000)
+  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 880))
+  sleep(3000)
+  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 220))
+  sleep(1000) 

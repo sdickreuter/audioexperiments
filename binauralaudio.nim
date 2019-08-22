@@ -105,4 +105,4 @@ while true:
 
   tb.draw(g)
   tb.display()
-  sleep(20)
+  sleep(15)
