@@ -1,6 +1,4 @@
-import strutils, times, locks, os
 import audiotypes
-import audioplayer
 import math
 
 # modified from https://github.com/jlp765/seqmath
@@ -22,13 +20,9 @@ proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32
       step += diff
 
 
-const freq = 440
-const pi = 3.141592653589
-
 var
   generatorthread: Thread[void]
   currentframe: int = 0
-  params = GeneratorParams(leftfreq:440,rightfreq:440,leftvol:0.1,rightvol:0.1)
 
 
 proc runthread {.thread.} =
@@ -39,48 +33,59 @@ proc runthread {.thread.} =
     success: bool
     msg : ControlMessage 
     active: bool = false
+    params: GeneratorParams
+    
+  params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
 
   while true:
     (success, msg)= controlchannel.tryRecv()
     if success:
       case msg.kind
       of leftfreq:
-        params.leftfreq = msg.lfreq
+        params.leftfreq.set(msg.lfreq)
       of rightfreq:
-        params.rightfreq = msg.rfreq
+        params.rightfreq.set(msg.rfreq)
       of leftvol:
-        params.leftvol = msg.lvol
+        params.leftvol.set(msg.lvol)
       of rightvol:
-        params.rightvol = msg.rvol
+        params.rightvol.set(msg.rvol)
       of setactive:
         currentframe = 0
         active = true
+        params.fade.set(1.0)
       of setinactive:
-        active = false
+        #active = false
+        params.fade.set(0.0)
       of terminate:
         audiochannel.send(AudioMessage(kind: stop))
         break
     
-    if audiochannel.peek() < 5:
+    if audiochannel.peek() < numberofBuffers:
       t = linspace(currentframe, currentframe + int(framesPerBuffer))
       for i in 0..<framesPerBuffer: 
         t[i] /= float32(sampleRate)
 
       if active:
         for i in 0..<framesPerBuffer: 
-          leftdata[i] = sin(params.leftfreq*(2*pi)*t[i])*params.leftvol
-          rightdata[i] = sin(params.rightfreq*(2*pi)*t[i])*params.rightvol
+          leftdata[i] = sin(params.leftfreq.get()*(2*PI)*t[i])*params.leftvol.get()*params.fade.get()
+          rightdata[i] = sin(params.rightfreq.get()*(2*PI)*t[i])*params.rightvol.get()*params.fade.get()
+          #echo( $leftdata[i] & "  " & $rightdata[i])
+          #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
+
+          params.iterateParams()
+
+        if params.fade.get() < 0.0001:
+          active = false
 
         var msg = AudioMessage(kind: audio)
         msg.left = leftdata
         msg.right = rightdata
         audiochannel.send(msg)
-        #echo("audio sent")
         currentframe += int(framesPerBuffer)
+
       else:
         var msg = AudioMessage(kind: silent)
         audiochannel.send(msg)
-        #echo("silent sent")
 
 
 proc stopThread* {.noconv.} =
@@ -100,13 +105,19 @@ audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
+  import audioplayer
+  import os
+
   initstream()
   echo("stream initiated")
   startThread()
   echo("thread started")
   startstream()
   echo("stream started")
-  sleep(200)
-  var msg = ControlMessage(kind: setactive)
-  controlchannel.send(msg)
-  sleep(2000) 
+  sleep(50)
+  controlchannel.send(ControlMessage(kind: setactive))
+  sleep(1000)
+  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 450))
+  sleep(1000)
+  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 450))
+  sleep(1000) 

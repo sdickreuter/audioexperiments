@@ -6,7 +6,6 @@
 
 import portaudio as PA
 import audiotypes
-import audiogenerator
 
 
 proc check(err: TError|TErrorCode) =
