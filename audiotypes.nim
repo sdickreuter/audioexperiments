@@ -44,6 +44,7 @@ type
     target: float32
     t1: float32
     t: float32
+    fading*: bool
 
 
   GeneratorParams* = object
@@ -59,6 +60,7 @@ proc newParamFader*(value: float32, t1: float32): ParamFader =
   result.target = value
   result.t1 = t1
   result.t = 0
+  result.fading = false
 
 proc iterate*(p: var ParamFader, dt: float32) =
   var
@@ -70,11 +72,12 @@ proc iterate*(p: var ParamFader, dt: float32) =
       p.t += dt
   else:
       p.value = p.target
+      p.fading = false
 
 proc set*(p: var ParamFader, value: float32) =
   p.target = value
   p.t = 0
-
+  p.fading = true
 
 proc get*(p: ParamFader): float32 =
   result = p.value

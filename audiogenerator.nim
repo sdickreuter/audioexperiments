@@ -36,7 +36,11 @@ proc runthread {.thread.} =
     params: GeneratorParams
     lfreq: float32 = 0
     rfreq: float32 = 0
-
+    lphase: float32 = 0
+    rphase: float32 = 0
+    lphase2: float32 = 0
+    rphase2: float32 = 0
+    lx, rx: float32 = 0
 
 
   params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
@@ -49,8 +53,10 @@ proc runthread {.thread.} =
     if success:
       case msg.kind
       of leftfreq:
+        lfreq = 0
         params.leftfreq.set(msg.lfreq)
       of rightfreq:
+        rfreq = 0
         params.rightfreq.set(msg.rfreq)
       of leftvol:
         params.leftvol.set(msg.lvol)
@@ -76,15 +82,56 @@ proc runthread {.thread.} =
         for i in 0..<framesPerBuffer: 
           params.iterateParams(1/float32(sampleRate))
 
-          lfreq += params.leftfreq.get()/float32(sampleRate)
-          rfreq += params.rightfreq.get()/float32(sampleRate)
+          if params.leftfreq.fading:
+            lfreq += params.leftfreq.get()/float32(sampleRate)
+            lx = lfreq*(2*PI)+lphase2
+            leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
+            lphase = lx
+            #if i > 1.uint64:
+            #  if leftdata[i-1] > leftdata[i]:
+            #    lphase = lphase+PI
+            #else:
+            #  if leftdata[framesPerBuffer-1] > leftdata[0]:
+            #    lphase = lphase+PI
+          else:
+            lx = params.leftfreq.get()*(2*PI)*t[i]+lphase
+            leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
+            lphase2 = lx mod (params.leftfreq.get()*2*PI)
+            #lphase2 = lx
+            #if i > 1.uint64:
+            #  if leftdata[i-1] > leftdata[i]:
+            #    lphase2 = lphase2+PI
+            #else:
+            #  if leftdata[framesPerBuffer-1] > leftdata[0]:
+            #    lphase2 = lphase2+PI
+              
 
-          leftdata[i] = sin(lfreq*(2*PI)) * params.leftvol.get()*params.fade.get()
-          rightdata[i] = sin(rfreq*(2*PI)) * params.rightvol.get()*params.fade.get()
+          if params.rightfreq.fading:
+            rfreq += params.rightfreq.get()/float32(sampleRate)
+            rx = rfreq*(2*PI)+rphase2
+            rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
+            rphase = rx
+            #if i > 1.uint64:
+            #  if rightdata[i-1] > rightdata[i]:
+            #    rphase = rphase + PI
+            #else:
+            #  if rightdata[framesPerBuffer-1] > rightdata[0]:
+            #    rphase = rphase + PI
+          else:
+            rx = params.rightfreq.get()*(2*PI)*t[i]+rphase
+            rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
+            rphase2 = rx mod (params.rightfreq.get()*2*PI)
+            #if i > 1.uint64:
+            #  if rightdata[i-1] > rightdata[i]:
+            #    rphase2 = rphase2 + PI
+            #else:
+            #  if rightdata[framesPerBuffer-1] > rightdata[0]:
+            #    rphase2 = rphase2 + PI
+
           #echo( $leftdata[i] & "  " & $rightdata[i])
           #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
           #echo( params.leftfreq.get()*(2*PI) )
-          echo( $(lfreq) & "  " & $(rfreq))
+          #echo( $(lfreq) & "  " & $(rfreq))
           
 
         if params.fade.get() < 0.000001:
@@ -130,7 +177,7 @@ when isMainModule:
   sleep(50)
   controlchannel.send(ControlMessage(kind: setactive))
   sleep(100)
-  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 441))
+  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 444))
   sleep(100)
   controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 880))
   sleep(100) 
