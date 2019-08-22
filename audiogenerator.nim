@@ -76,14 +76,13 @@ proc runthread {.thread.} =
           lx = lx mod (2*PI)
           leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
 
-          rx = ( params.rightfreq.get()/float32(sampleRate) ) * (2*PI)
+          rx += ( params.rightfreq.get()/float32(sampleRate) ) * (2*PI)
           rx = rx mod (2*PI)
           rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
 
           #echo( $leftdata[i] & "  " & $rightdata[i])
           #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
           #echo( params.leftfreq.get()*(2*PI) )
-          #echo( $(lfreq) & "  " & $(rfreq))
           
 
         if params.fade.get() < 0.000001:
@@ -112,13 +111,14 @@ proc startThread* {.noconv.} =
 
 
 # Initialize module
-#addQuitProc(stopThread)
 audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
   import audioplayer
   import os
+  
+  addQuitProc(stopThread)
 
   initstream()
   echo("stream initiated")
