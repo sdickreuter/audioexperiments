@@ -70,7 +70,7 @@ proc iterate*(p: var ParamFader) =
   if tdiff > 0:
     diff = p.target - p.value
     if diff > 0.0001:
-      p.value +=  (p.target - p.value)/float(tdiff)
+      p.value +=  diff/float32(tdiff)
       p.t += 1
     else:
       p.value = p.target
@@ -86,11 +86,11 @@ proc get*(p: ParamFader): float32 =
 
 
 proc newGeneratorParams*(leftfreq, rightfreq, leftvol, rightvol: float32): GeneratorParams =
-  result.leftfreq = newParamFader(leftfreq, int64(sampleRate*0.3))
-  result.rightfreq = newParamFader(rightfreq, int64(sampleRate*0.3))
+  result.leftfreq = newParamFader(leftfreq, int64(sampleRate*0.05))
+  result.rightfreq = newParamFader(rightfreq, int64(sampleRate*0.01))
   result.leftvol = newParamFader(leftvol, int64(sampleRate*0.1))
   result.rightvol = newParamFader(rightvol, int64(sampleRate*0.1))
-  result.fade = newParamFader(0, int64(sampleRate*0.1))
+  result.fade = newParamFader(0, int64(sampleRate*0.05))
 
 
 proc iterateParams*(p: var GeneratorParams) =

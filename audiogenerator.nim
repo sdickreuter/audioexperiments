@@ -35,7 +35,7 @@ proc runthread {.thread.} =
     active: bool = false
     params: GeneratorParams
     
-  params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
+  params = newGeneratorParams(leftfreq=220,rightfreq=220,leftvol=0.1,rightvol=0.1)
 
   while true:
     (success, msg)= controlchannel.tryRecv()
@@ -61,16 +61,18 @@ proc runthread {.thread.} =
         break
     
     if audiochannel.peek() < numberofBuffers:
-      t = linspace(currentframe, currentframe + int(framesPerBuffer))
-      for i in 0..<framesPerBuffer: 
-        t[i] /= float32(sampleRate)
-
       if active:
+        t = linspace(currentframe, currentframe + int(framesPerBuffer))
         for i in 0..<framesPerBuffer: 
-          leftdata[i] = sin(params.leftfreq.get()*(2*PI)*t[i])*params.leftvol.get()*params.fade.get()
-          rightdata[i] = sin(params.rightfreq.get()*(2*PI)*t[i])*params.rightvol.get()*params.fade.get()
+          t[i] /= float32(sampleRate)
+
+        for i in 0..<framesPerBuffer: 
+          leftdata[i] = sin(params.leftfreq.get()*(2*PI)*t[i]) * params.leftvol.get()*params.fade.get()
+          rightdata[i] = sin(params.rightfreq.get()*(2*PI)*t[i]) * params.rightvol.get()*params.fade.get()
           #echo( $leftdata[i] & "  " & $rightdata[i])
           #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
+          echo( params.leftfreq.get()*(2*PI) )
+          
 
           params.iterateParams()
 
@@ -116,8 +118,8 @@ when isMainModule:
   echo("stream started")
   sleep(50)
   controlchannel.send(ControlMessage(kind: setactive))
-  sleep(1000)
-  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 450))
-  sleep(1000)
-  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 450))
-  sleep(1000) 
+  sleep(100)
+  controlchannel.send(ControlMessage(kind: leftfreq, lfreq: 440))
+  sleep(100)
+  controlchannel.send(ControlMessage(kind: rightfreq, rfreq: 440))
+  sleep(100) 
