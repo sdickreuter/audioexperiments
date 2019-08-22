@@ -72,8 +72,8 @@ method draw*(slider:Slider, tb: var TerminalBuffer) =
     pos: int
     numberstr: string
 
-  tb.setBackgroundColor(bgNone)
-  tb.setForegroundColor(fgBlack, true)
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite, true)
   tb.drawRect(slider.x, slider.y, slider.x+slider.width+1, slider.y+2,doubleStyle=true)
   pos = int( ( (slider.value - slider.min) / (slider.max - slider.min) ) * float(slider.width))
   tb.setForegroundColor(fgNone)
@@ -88,12 +88,13 @@ method draw*(slider:Slider, tb: var TerminalBuffer) =
   for i in 0..<pos:
     tb.write(slider.x+1+i, slider.y+1,$numberstr[i]) #█░
   
-  tb.setBackgroundColor(bgWhite)
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite)
   for i in pos..<slider.width:
     tb.write(slider.x+1+i, slider.y+1,$numberstr[i])
 
-  tb.setBackgroundColor(bgNone)
-  tb.setForegroundColor(fgBlack)
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite)
   tb.write(slider.x+1, slider.y,slider.label)
 
 
@@ -135,8 +136,8 @@ method draw*(but: ToggleButton, tb: var TerminalBuffer) =
   var 
     labelstr: string
 
-  tb.setBackgroundColor(bgNone)
-  tb.setForegroundColor(fgBlack, true)
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite, true)
   tb.drawRect(but.x, but.y, but.x+but.width+1, but.y+2,doubleStyle=true)
 
   labelstr = generate_centered_string(but.label,but.width)
@@ -144,13 +145,13 @@ method draw*(but: ToggleButton, tb: var TerminalBuffer) =
   if but.toggled:
     tb.setForegroundColor(fgGreen)
   else:
-    tb.setForegroundColor(fgBlack)
+    tb.setForegroundColor(fgWhite)
    
 
   if but.focus:
     tb.setBackgroundColor(bgBlue)
   else:
-    tb.setBackgroundColor(bgNone)
+    tb.setBackgroundColor(bgBlack)
  
   for i in 0..<but.width:
     tb.write(but.x+1+i, but.y+1,$labelstr[i])
