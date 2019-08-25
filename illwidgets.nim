@@ -1,37 +1,42 @@
 import illwill
 import strutils
 
-
+## Function for padding a string with whitespace on both sides
 proc generate_centered_string[T](thing: T, width: int): string =
   result = $thing
   result = result & spaces(int(width/2) - int(len(result)/2)+1)
   result = align(result, width )
 
 type
+  ## Basic Object 
   UIObject = ref object of RootObj
     x,y,width: int
     focus: bool
 
+## Set Focus to UIObject, changes appearance and relay key input to this object
 proc setFocus*(obj: UIObject, focus: bool) =
   obj.focus = focus
 
+## Handle key input
 method handleinput*(obj: UIObject, key: Key) {.base.} =
   quit("please overwrite method handleinput")
 
-
+## Draw UIObject
 method draw(obj:UIObject, tb: var TerminalBuffer) {.base.} =
   quit("please overwrite method draw")
 
 type
+  ## Widget for setting an integer with the left/right keys 
+  ## and displaying a nice slider as indication
   Slider* = ref object of UIObject
     min*, max*, value*: int
     step* : int
     label* : string 
     onchange* : proc(slider: Slider)
 
+## Dummy onchange function
 proc onchange(slider: Slider) =
   discard
-
 
 proc newSlider*(min, max, step, value: int; x,y,width: int,label=""): Slider =
   result = new(Slider)
@@ -44,6 +49,7 @@ proc newSlider*(min, max, step, value: int; x,y,width: int,label=""): Slider =
   result. width = width
   result.label = label
   result.focus = false
+  ## Change this to your own proc after newSlider if you want
   result.onchange = onchange
 
 proc inc*(slider: Slider) =

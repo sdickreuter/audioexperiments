@@ -76,11 +76,3 @@ proc InitSDL*() =
     echo("Couldn't open 32-bit float audio channel.")
     return 
   
-
-#proc main() =
-#  Initsdl()
-#  # Playback audio for 2 seconds
-#  startaudio()
-#  delay(2000)
-#
-#main()

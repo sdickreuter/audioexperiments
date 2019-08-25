@@ -41,15 +41,14 @@ type
     of terminate:
       nil
 
-
+  ## Fades a value to a target linearly over time
   ParamFader = object
     value: float32
     target: float32
-    t1: float32
-    t: float32
-    fading*: bool
+    t1: float32 # time to fade
+    t: float32 # actual time
 
-
+  ## Holds different ParamFaders for different audio generation parameters
   GeneratorParams* = object
     leftfreq*: ParamFader
     rightfreq*: ParamFader
@@ -63,8 +62,8 @@ proc newParamFader*(value: float32, t1: float32): ParamFader =
   result.target = value
   result.t1 = t1
   result.t = 0
-  result.fading = false
 
+## Update value, calculates fade speed and fades value closer to target
 proc iterate*(p: var ParamFader, dt: float32) =
   var
     tdiff: float32 = p.t1 - p.t 
@@ -75,12 +74,11 @@ proc iterate*(p: var ParamFader, dt: float32) =
       p.t += dt
   else:
       p.value = p.target
-      p.fading = false
 
+## Set new target
 proc set*(p: var ParamFader, value: float32) =
   p.target = value
   p.t = 0
-  p.fading = true
 
 proc get*(p: ParamFader): float32 =
   result = p.value
@@ -101,9 +99,12 @@ proc iterateParams*(p: var GeneratorParams, dt: float32) =
   p.rightvol.iterate(dt)
   p.fade.iterate(dt)
 
+var 
+ ## Channel used to get audio data from audiogenerator.nim to audioplayer.nim
+ audiochannel*: Channel[AudioMessage]
+ ## Channel used control audio generation thread in audiogenerator.nim
+ controlchannel*: Channel[ControlMessage]
 
-var audiochannel*: Channel[AudioMessage]
-var controlchannel*: Channel[ControlMessage]
-
+## Init Channels
 controlchannel.open()
 audiochannel.open()

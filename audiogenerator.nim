@@ -1,45 +1,38 @@
+## Module for generating binaural audio in a separate thread an feeding 
+## it through a channel to audioplayer.nim
+##
+
 import audiotypes
 import math
 
-# modified from https://github.com/jlp765/seqmath
-proc linspace(start, stop: int, endpoint = true): array[framesPerBuffer, float32] =
-  var 
-    step = float(start)
-    diff: float
-  if endpoint == true:
-    diff = float(stop - start) / float(framesPerBuffer - 1)
-  else:
-    diff = float(stop - start) / float(framesPerBuffer)
-  if diff < 0:
-    # in case start is bigger than stop, return an empty sequence
-    return 
-  else:
-    for i in 0..<framesPerBuffer:
-      result[i] = step
-      # for every element calculate new value for next iteration
-      step += diff
-
 
 var
+  ## Thread for generating audio
   generatorthread: Thread[void]
-  currentframe: int = 0
 
-
+## 
 proc runthread {.thread.} =
   var 
-    #t : array[framesPerBuffer, float32]
+    ## buffer for left channel
     leftdata : array[framesPerBuffer, float32]
+    ## buffer for right channel
     rightdata : array[framesPerBuffer, float32]
+    ## variable for checking of success of received control message
     success: bool
+    ## variable for storing control message
     msg : ControlMessage 
+    ## if thread is generating audio data or just silence
     active: bool = false
+    ## special object for holding parameters for audio generation
     params: GeneratorParams
+    ## x-variables for the sinus functions for sound generation
     lx, rx: float32 = 0
 
 
+  ## init params
   params = newGeneratorParams(leftfreq=440,rightfreq=440,leftvol=0.1,rightvol=0.1)
 
-
+  ## main loop
   while true:
     (success, msg)= controlchannel.tryRecv()
     if success:
@@ -53,7 +46,6 @@ proc runthread {.thread.} =
       of rightvol:
         params.rightvol.set(msg.rvol)
       of setactive:
-        currentframe = 0
         active = true
         params.fade.set(1.0)
       of setinactive:
@@ -65,36 +57,33 @@ proc runthread {.thread.} =
     
     if audiochannel.peek() < numberofBuffers:
       if active:
-        #t = linspace(currentframe, currentframe + int(framesPerBuffer))
-        #for i in 0..<framesPerBuffer: 
-        #  t[i] /= float32(sampleRate)
 
         for i in 0..<framesPerBuffer: 
+          ## iterate params to get updated values for the parameters
           params.iterateParams(1/float32(sampleRate))
 
+          ## calculate new x-value
           lx += ( params.leftfreq.get()/float32(sampleRate) ) * (2*PI)
           lx = lx mod (2*PI)
+          ## calculate amplitude for left channel
           leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
 
           rx += ( params.rightfreq.get()/float32(sampleRate) ) * (2*PI)
           rx = rx mod (2*PI)
           rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
-
-          #echo( $leftdata[i] & "  " & $rightdata[i])
-          #echo( $params.leftfreq.get() & "  " & $params.rightfreq.get())
-          #echo( params.leftfreq.get()*(2*PI) )
-          
-
+     
+        ## check for end of fade-out and disable sound generation
         if params.fade.get() < 0.000001:
           active = false
 
+        ## send audio data to audioplayer.nim
         var msg = AudioMessage(kind: amaudio)
         msg.left = leftdata
         msg.right = rightdata
         audiochannel.send(msg)
-        currentframe += int(framesPerBuffer)
 
       else:
+        ## send silence to audioplayer.nim
         var msg = AudioMessage(kind: amsilent)
         audiochannel.send(msg)
 
@@ -102,18 +91,13 @@ proc runthread {.thread.} =
 proc stopThread* {.noconv.} =
   controlchannel.send(ControlMessage(kind: terminate))
   joinThread(generatorthread)
-  #sleep(200)
 
-  #close(audiochannel)
   
 proc startThread* {.noconv.} =
   generatorthread.createThread(runthread)
 
 
-# Initialize module
-audiochannel.open()
-controlchannel.open()
-
+# Sound test
 when isMainModule:
   import audioplayer_sdl2
   import os
