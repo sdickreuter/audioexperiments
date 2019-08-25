@@ -58,13 +58,15 @@ proc InitSDL*() =
   audioSpec.freq = sampleRate
   audioSpec.format = AUDIO_F32
   audioSpec.channels = 2
-  audioSpec.samples = framesPerBuffer*2
+  audioSpec.samples = framesPerBuffer
   audioSpec.padding = 0
   audioSpec.callback = AudioCallback
   audioSpec.userdata = nil
-  if openAudio(addr(audioSpec), addr(obtained)) != 0:
+  if openAudio(addr(audioSpec), nil) != 0: #force audiospec!
+  #if openAudio(addr(audioSpec), addr(obtained)) != 0:
     echo("Couldn't open audio device. " & $getError() & "\n")
     return
+  obtained = audioSpec
   echo("frequency: ", obtained.freq)
   echo("format: ", obtained.format)
   echo("channels: ", obtained.channels)
@@ -73,7 +75,7 @@ proc InitSDL*() =
   if obtained.format != AUDIO_F32:
     echo("Couldn't open 32-bit float audio channel.")
     return 
-
+  
 
 #proc main() =
 #  Initsdl()

@@ -15,7 +15,7 @@ proc exitProc() {.noconv.} =
   quit(0)
 
 
-Initsdl()
+InitSDL()
 startThread()
 startAudio()
 
