@@ -60,7 +60,7 @@ proc runthread {.thread.} =
         #active = false
         params.fade.set(0.0)
       of terminate:
-        audiochannel.send(AudioMessage(kind: stop))
+        audiochannel.send(AudioMessage(kind: amstop))
         break
     
     if audiochannel.peek() < numberofBuffers:
@@ -88,14 +88,14 @@ proc runthread {.thread.} =
         if params.fade.get() < 0.000001:
           active = false
 
-        var msg = AudioMessage(kind: audio)
+        var msg = AudioMessage(kind: amaudio)
         msg.left = leftdata
         msg.right = rightdata
         audiochannel.send(msg)
         currentframe += int(framesPerBuffer)
 
       else:
-        var msg = AudioMessage(kind: silent)
+        var msg = AudioMessage(kind: amsilent)
         audiochannel.send(msg)
 
 
@@ -115,17 +115,18 @@ audiochannel.open()
 controlchannel.open()
 
 when isMainModule:
-  import audioplayer
+  import audioplayer_sdl2
   import os
   
   addQuitProc(stopThread)
 
-  initstream()
-  echo("stream initiated")
+  InitSDL()
+  echo("Audio initiated")
   startThread()
   echo("thread started")
-  startstream()
-  echo("stream started")
+  sleep(100)
+  startAudio()
+  echo("Audio started")
   sleep(50)
   controlchannel.send(ControlMessage(kind: setactive))
   sleep(1000)

@@ -3,21 +3,21 @@ import illwill, illwidgets
 
 import audiotypes
 import audiogenerator
-import audioplayer
+import audioplayer_sdl2
 
 # 1. Initialise terminal in fullscreen mode and make sure we restore the state
 # of the terminal state when exiting.
 proc exitProc() {.noconv.} =
   illwillDeinit()
   showCursor()
+  stopAudio()
   stopThread()
-  terminatestream() 
   quit(0)
 
 
-initstream()
+Initsdl()
 startThread()
-startstream()
+startAudio()
 
 illwillInit(fullscreen=true)
 setControlCHook(exitProc)

@@ -1,21 +1,24 @@
 
-const sampleRate* : cdouble = 44100
-const framesPerBuffer* : culong = 2048
-const numberofBuffers* : int = 5
+#const sampleRate* : cdouble = 44100
+#const framesPerBuffer* : culong = 2048
+#const numberofBuffers* : int = 5
 
+const sampleRate* = 44100
+const framesPerBuffer* = 2048
+const numberofBuffers* = 5
 
 type
   AudioMessageKind* = enum
-    audio, silent, stop
+    amaudio, amsilent, amstop
 
   AudioMessage* = object
     case kind*: AudioMessageKind
-    of audio:
+    of amaudio:
       left*: array[framesPerBuffer, float32]
       right*: array[framesPerBuffer, float32]
-    of silent:
+    of amsilent:
       nil
-    of stop:
+    of amstop:
       nil
 
   ControlMessageKind* = enum
