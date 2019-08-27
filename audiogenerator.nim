@@ -27,7 +27,9 @@ proc runthread {.thread.} =
     params: GeneratorParams
     ## x-variables for the sinus functions for sound generation
     lx, rx: float32 = 0
-    ## mono = true means that each channel has the same output, a direct overlay between the two sines instead of binaural
+    ## mono = true means that each channel has the same output, a direct 
+    ## overlay between the two sines instead of binaural output 
+    ##with different sines for every channel
     mono: bool = false
 
 
@@ -53,7 +55,6 @@ proc runthread {.thread.} =
         active = true
         params.fade.set(1.0)
       of setinactive:
-        #active = false
         params.fade.set(0.0)
       of terminate:
         audiochannel.send(AudioMessage(kind: amstop))
