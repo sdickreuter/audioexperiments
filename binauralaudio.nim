@@ -43,12 +43,15 @@ tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
 var g = newUIGroup()
 
 var 
-  startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label=" Start playing ")
-  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 9,width= 25,label="Frequency")
-  octavebut = newToggleButton(toggled = false, x = 1, y = 12, width = 19, label=" Detune one Octave ")
-  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 15,width= 25,label="Detune")
-  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= 18,width= 25,label="Volume")
+  y = 5
+  startbut = newToggleButton(toggled = false, x = 1, y = y, width = 15, label=" Start playing ")
+  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= y+3,width= 25,label="Frequency")
+  octavebut = newToggleButton(toggled = false, x = 1, y = y+6, width = 19, label=" Detune one Octave ")
+  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= y+9,width= 25,label="Detune")
+  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= y+12,width= 25,label="Volume")
   detune_octave : bool = false
+  monobut = newToggleButton(toggled = false, x = 1, y = y+15, width = 15, label=" Activate Mono ")
+
 
 proc ontoggle_start(but: ToggleButton) =
   if but.toggled:
@@ -82,12 +85,18 @@ proc onchange_volume(slider: Slider) =
 
 volumeslider.onchange = onchange_volume 
 
+proc ontoggle_mono(but: ToggleButton) =
+    controlchannel.send(ControlMessage(kind: switchmono))
+
+
+monobut.ontoggle = ontoggle_mono 
 
 g.add(startbut)
 g.add(freqslider)
 g.add(octavebut)
 g.add(detuneslider)
 g.add(volumeslider)
+g.add(monobut)
 
 g.setFocusto(0)
 

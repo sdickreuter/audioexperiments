@@ -27,6 +27,8 @@ proc runthread {.thread.} =
     params: GeneratorParams
     ## x-variables for the sinus functions for sound generation
     lx, rx: float32 = 0
+    ## mono = true means that each channel has the same output, a direct overlay between the two sines instead of binaural
+    mono: bool = false
 
 
   ## init params
@@ -45,6 +47,8 @@ proc runthread {.thread.} =
         params.leftvol.set(msg.lvol)
       of rightvol:
         params.rightvol.set(msg.rvol)
+      of switchmono:
+         params.monofade.set(0.0)
       of setactive:
         active = true
         params.fade.set(1.0)
@@ -57,24 +61,45 @@ proc runthread {.thread.} =
     
     if audiochannel.peek() < numberofBuffers:
       if active:
-
         for i in 0..<framesPerBuffer: 
+
           ## iterate params to get updated values for the parameters
           params.iterateParams(1/float32(sampleRate))
 
-          ## calculate new x-value
+
+          ## calculate new x-value for left channel
           lx += ( params.leftfreq.get()/float32(sampleRate) ) * (2*PI)
           lx = lx mod (2*PI)
-          ## calculate amplitude for left channel
-          leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()
 
+          ## calculate new x-value for right channel
           rx += ( params.rightfreq.get()/float32(sampleRate) ) * (2*PI)
           rx = rx mod (2*PI)
-          rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()
-     
+
+
+          if params.monofade.get() < 0.01:
+            # set monofade back to 1.0 to fade in
+            params.monofade.set(1.0)
+            # switch mono at lowest volume
+            mono = not mono
+
+
+          if mono:
+            ## calculate amplitude for left channel
+            leftdata[i] = (sin(lx)+sin(rx)) * 0.5 * params.leftvol.get()*params.fade.get()*params.monofade.get()
+            ## calculate amplitude for right channel
+            rightdata[i] = (sin(rx)+sin(lx)) * 0.5 * params.rightvol.get()*params.fade.get()*params.monofade.get()
+          else:
+            ## calculate amplitude for left channel
+            leftdata[i] = sin(lx) * params.leftvol.get()*params.fade.get()*params.monofade.get()
+            ## calculate amplitude for right channel
+            rightdata[i] = sin(rx) * params.rightvol.get()*params.fade.get()*params.monofade.get()
+
+
+
         ## check for end of fade-out and disable sound generation
         if params.fade.get() < 0.000001:
           active = false
+ 
 
         ## send audio data to audioplayer.nim
         var msg = AudioMessage(kind: amaudio)

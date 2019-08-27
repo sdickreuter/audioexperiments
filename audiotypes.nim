@@ -22,7 +22,7 @@ type
       nil
 
   ControlMessageKind* = enum
-    leftfreq, rightfreq, leftvol, rightvol, setactive, setinactive, terminate
+    leftfreq, rightfreq, leftvol, rightvol, setactive, setinactive, terminate, switchmono
 
   ControlMessage* = object
     case kind*: ControlMessageKind
@@ -34,6 +34,8 @@ type
       lvol*: float32
     of rightvol:
       rvol*: float32
+    of switchmono:
+      nil
     of setactive:
       nil
     of setinactive:
@@ -55,6 +57,7 @@ type
     leftvol*: ParamFader
     rightvol*: ParamFader
     fade*: ParamFader
+    monofade*: ParamFader
 
 
 proc newParamFader*(value: float32, t1: float32): ParamFader =
@@ -90,6 +93,8 @@ proc newGeneratorParams*(leftfreq, rightfreq, leftvol, rightvol: float32): Gener
   result.leftvol = newParamFader(leftvol, 0.01)
   result.rightvol = newParamFader(rightvol, 0.01)
   result.fade = newParamFader(0, 0.01)
+  result.monofade = newParamFader(1.0, 0.05)
+
 
 
 proc iterateParams*(p: var GeneratorParams, dt: float32) =
@@ -98,6 +103,8 @@ proc iterateParams*(p: var GeneratorParams, dt: float32) =
   p.leftvol.iterate(dt)
   p.rightvol.iterate(dt)
   p.fade.iterate(dt)
+  p.monofade.iterate(dt)
+
 
 var 
  ## Channel used to get audio data from audiogenerator.nim to audioplayer.nim
