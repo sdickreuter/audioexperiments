@@ -30,17 +30,19 @@ proc runthread {.thread.} =
 
 
   ## init params
-  params = newGeneratorParams(f0=440,nu=5,deltaf=20,vol=0.1)
+  params = newGeneratorParams(f0=440,deltavol=0.2,vol=0.1)
 
   ## main loop
   while true:
+    
+    #while controlchannel.peek() > 0:
     (success, msg)= controlchannel.tryRecv()
     if success:
       case msg.kind
       of cmf0:
         params.f0.set(msg.f0)
-      of cmdeltaf:
-        params.deltaf.set(msg.deltaf)
+      of cmdeltavol:
+        params.deltavol.set(msg.deltavol)
       of cmvol:
         params.vol.set(msg.vol)
       of setactive:
@@ -60,16 +62,17 @@ proc runthread {.thread.} =
           ## iterate params to get updated values for the parameters
           params.iterateParams(1/float32(sampleRate))
 
-
           ## calculate new x-value
-          x += ( (params.f0.get() ) / float32(sampleRate) ) * (2*PI)
+          x += (params.f0.get() / float32(sampleRate) ) * (2*PI)
           x = x mod (2*PI)
           
           y = sin(x) * params.vol.get()*params.fade.get()
-          
-          leftdata[i] = y
-          rightdata[i] = y
-     
+
+          ## calculate amplitude for left channel
+          leftdata[i] = y 
+          ## calculate amplitude for right channel
+          rightdata[i] = y*params.deltavol.get()
+
         ## check for end of fade-out and disable sound generation
         if params.fade.get() < 0.000001:
           active = false

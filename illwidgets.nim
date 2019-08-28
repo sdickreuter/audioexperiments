@@ -3,9 +3,14 @@ import strutils
 
 ## Function for padding a string with whitespace on both sides
 proc generate_centered_string[T](thing: T, width: int): string =
-  result = $thing
-  result = result & spaces(int(width/2) - int(len(result)/2)+1)
-  result = align(result, width )
+  var 
+    s: string = $thing
+  if len(s) < width:
+    result = $thing
+    result = result & spaces(int(width/2) - int(len(result)/2)+1)
+    result = align(result, width )
+  else:
+    result = s
 
 type
   ## Basic Object 
@@ -161,6 +166,58 @@ method draw*(but: ToggleButton, tb: var TerminalBuffer) =
  
   for i in 0..<but.width:
     tb.write(but.x+1+i, but.y+1,$labelstr[i])
+
+
+
+
+
+type
+  Button* = ref object of UIObject
+    label* : string 
+    onpress* : proc(but: Button)
+
+proc onpress(but: Button) =
+  discard
+
+
+proc newButton*(x,y,width: int; label=""): Button =
+  result = new(Button)
+  result.x = x
+  result.y = y
+  result. width = width
+  result.label = label
+  result.focus = false
+  result.onpress = onpress
+
+method handleinput*(but: Button, key: Key) =
+  case key  
+  of Key.Enter:
+    but.onpress(but)
+  else:
+    discard
+
+method draw*(but: Button, tb: var TerminalBuffer) =
+  var 
+    labelstr: string
+
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite, true)
+  tb.drawRect(but.x, but.y, but.x+but.width+1, but.y+2,doubleStyle=true)
+
+  labelstr = generate_centered_string(but.label,but.width)
+
+  tb.setForegroundColor(fgWhite)
+
+  if but.focus:
+    tb.setBackgroundColor(bgBlue)
+  else:
+    tb.setBackgroundColor(bgBlack)
+ 
+  for i in 0..<but.width:
+    tb.write(but.x+1+i, but.y+1,$labelstr[i])
+
+
+
   
 
 type

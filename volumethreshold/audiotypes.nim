@@ -83,7 +83,7 @@ proc get*(p: ParamFader): float32 =
 
 proc newGeneratorParams*(f0, deltavol, vol: float32): GeneratorParams =
   result.f0 = newParamFader(f0, 0.01)
-  result.deltavol = newParamFader(deltaf, 0.01)
+  result.deltavol = newParamFader(deltavol, 0.01)
   result.vol = newParamFader(vol, 0.01)
   result.fade = newParamFader(0.0, 0.01)
 
