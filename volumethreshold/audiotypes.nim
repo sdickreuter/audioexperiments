@@ -22,16 +22,14 @@ type
       nil
 
   ControlMessageKind* = enum
-    cmf0, cmnu, cmvol, cmdeltaf, setactive, setinactive, terminate
+    cmf0, cmdeltavol, cmvol, setactive, setinactive, terminate
 
   ControlMessage* = object
     case kind*: ControlMessageKind
     of cmf0:
       f0*: float32
-    of cmnu:
-      nu*: float32
-    of cmdeltaf:
-      deltaf*: float32
+    of cmdeltavol:
+      deltavol*: float32
     of cmvol:
       vol*: float32
     of setactive:
@@ -51,8 +49,7 @@ type
   ## Holds different ParamFaders for different audio generation parameters
   GeneratorParams* = object
     f0*: ParamFader
-    nu*: ParamFader
-    deltaf*: ParamFader
+    deltavol*: ParamFader
     vol*: ParamFader
     fade*: ParamFader
 
@@ -84,19 +81,16 @@ proc get*(p: ParamFader): float32 =
   result = p.value
 
 
-proc newGeneratorParams*(f0, nu, deltaf, vol: float32): GeneratorParams =
+proc newGeneratorParams*(f0, deltavol, vol: float32): GeneratorParams =
   result.f0 = newParamFader(f0, 0.01)
-  result.nu = newParamFader(nu, 0.01)
-  result.deltaf = newParamFader(deltaf, 0.01)
+  result.deltavol = newParamFader(deltaf, 0.01)
   result.vol = newParamFader(vol, 0.01)
   result.fade = newParamFader(0.0, 0.01)
 
 
 proc iterateParams*(p: var GeneratorParams, dt: float32) =
   p.f0.iterate(dt)
-  p.nu.iterate(dt)
-  p.deltaf.iterate(dt)
-  p.deltaf.iterate(dt)
+  p.deltavol.iterate(dt)
   p.vol.iterate(dt)
   p.fade.iterate(dt)
 

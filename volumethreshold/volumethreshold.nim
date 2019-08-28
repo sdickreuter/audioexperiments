@@ -50,8 +50,6 @@ var
       y = y+3, width = 25, label = " f₀ / Hz ")
   deltaslider = newSlider(min = 1, max = 100, step = 1, value = 20, x = 1,
       y = y+6, width = 25, label = " Δf / Hz ")
-  nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
-      y = y+9, width = 25, label = " ν / Hz ")
   volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
       y = y+12, width = 25, label = "Volume")
 
@@ -74,11 +72,6 @@ proc onchange_delta(slider: Slider) =
 
 deltaslider.onchange = onchange_delta
 
-proc onchange_nu(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmnu, nu: float(nuslider.value)))
-
-nuslider.onchange = onchange_nu
-
 proc onchange_volume(slider: Slider) =
   controlchannel.send(ControlMessage(kind: cmvol, vol: float(
       volumeslider.value)/100))
@@ -89,7 +82,6 @@ volumeslider.onchange = onchange_volume
 g.add(startbut)
 g.add(freqslider)
 g.add(deltaslider)
-g.add(nuslider)
 g.add(volumeslider)
 
 g.setFocusto(0)

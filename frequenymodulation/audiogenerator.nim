@@ -63,7 +63,7 @@ proc runthread {.thread.} =
           params.iterateParams(1/float32(sampleRate))
 
           ## calculate x-value of modulation
-          xnu += params.nu.get() / float32(sampleRate)
+          xnu += params.nu.get() / float32(sampleRate) * (2*PI)
           xnu = xnu mod (2*PI)
 
           ## calculate new x-value

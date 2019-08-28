@@ -26,7 +26,7 @@ proc runthread {.thread.} =
     ## special object for holding parameters for audio generation
     params: GeneratorParams
     ## x-variables for the sinus functions for sound generation
-    x,xnu,y: float32 = 0
+    x, y: float32 = 0
 
 
   ## init params
@@ -39,8 +39,6 @@ proc runthread {.thread.} =
       case msg.kind
       of cmf0:
         params.f0.set(msg.f0)
-      of cmnu:
-        params.nu.set(msg.nu)
       of cmdeltaf:
         params.deltaf.set(msg.deltaf)
       of cmvol:
@@ -62,12 +60,9 @@ proc runthread {.thread.} =
           ## iterate params to get updated values for the parameters
           params.iterateParams(1/float32(sampleRate))
 
-          ## calculate x-value of modulation
-          xnu += params.nu.get() / float32(sampleRate)
-          xnu = xnu mod (2*PI)
 
           ## calculate new x-value
-          x += ( (params.f0.get() + params.deltaf.get()*sin(xnu) ) / float32(sampleRate) ) * (2*PI)
+          x += ( (params.f0.get() ) / float32(sampleRate) ) * (2*PI)
           x = x mod (2*PI)
           
           y = sin(x) * params.vol.get()*params.fade.get()

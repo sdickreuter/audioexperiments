@@ -96,7 +96,6 @@ proc iterateParams*(p: var GeneratorParams, dt: float32) =
   p.f0.iterate(dt)
   p.nu.iterate(dt)
   p.deltaf.iterate(dt)
-  p.deltaf.iterate(dt)
   p.vol.iterate(dt)
   p.fade.iterate(dt)
 
