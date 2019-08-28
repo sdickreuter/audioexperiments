@@ -22,18 +22,18 @@ type
       nil
 
   ControlMessageKind* = enum
-    leftfreq, rightfreq, leftvol, rightvol, setactive, setinactive, terminate
+    cmf0, cmnu, cmvol, cmdeltaf, setactive, setinactive, terminate
 
   ControlMessage* = object
     case kind*: ControlMessageKind
-    of leftfreq:
-      lfreq*: float32
-    of rightfreq:
-      rfreq*: float32
-    of leftvol:
-      lvol*: float32
-    of rightvol:
-      rvol*: float32
+    of cmf0:
+      f0*: float32
+    of cmnu:
+      nu*: float32
+    of cmdeltaf:
+      deltaf*: float32
+    of cmvol:
+      vol*: float32
     of setactive:
       nil
     of setinactive:
@@ -50,10 +50,10 @@ type
 
   ## Holds different ParamFaders for different audio generation parameters
   GeneratorParams* = object
-    leftfreq*: ParamFader
-    rightfreq*: ParamFader
-    leftvol*: ParamFader
-    rightvol*: ParamFader
+    f0*: ParamFader
+    nu*: ParamFader
+    deltaf*: ParamFader
+    vol*: ParamFader
     fade*: ParamFader
 
 
@@ -84,19 +84,20 @@ proc get*(p: ParamFader): float32 =
   result = p.value
 
 
-proc newGeneratorParams*(leftfreq, rightfreq, leftvol, rightvol: float32): GeneratorParams =
-  result.leftfreq = newParamFader(leftfreq, 0.01)
-  result.rightfreq = newParamFader(rightfreq, 0.01)
-  result.leftvol = newParamFader(leftvol, 0.01)
-  result.rightvol = newParamFader(rightvol, 0.01)
-  result.fade = newParamFader(0, 0.01)
+proc newGeneratorParams*(f0, nu, deltaf, vol: float32): GeneratorParams =
+  result.f0 = newParamFader(f0, 0.01)
+  result.nu = newParamFader(nu, 0.01)
+  result.deltaf = newParamFader(deltaf, 0.01)
+  result.vol = newParamFader(vol, 0.01)
+  result.fade = newParamFader(0.0, 0.01)
 
 
 proc iterateParams*(p: var GeneratorParams, dt: float32) =
-  p.leftfreq.iterate(dt)
-  p.rightfreq.iterate(dt)
-  p.leftvol.iterate(dt)
-  p.rightvol.iterate(dt)
+  p.f0.iterate(dt)
+  p.nu.iterate(dt)
+  p.deltaf.iterate(dt)
+  p.deltaf.iterate(dt)
+  p.vol.iterate(dt)
   p.fade.iterate(dt)
 
 var 

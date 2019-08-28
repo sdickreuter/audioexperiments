@@ -1,5 +1,5 @@
-import os 
-import illwill, illwidgets
+import os
+import illwill, ../illwidgets
 
 import audiotypes
 import audiogenerator
@@ -19,7 +19,7 @@ InitSDL()
 startThread()
 startAudio()
 
-illwillInit(fullscreen=true)
+illwillInit(fullscreen = true)
 setControlCHook(exitProc)
 hideCursor()
 
@@ -34,21 +34,26 @@ tb.setForegroundColor(fgWhite, true)
 tb.setBackgroundColor(bgBlack)
 
 tb.fill(0, 0, tb.width-1, tb.height-1)
-tb.drawHorizLine(2, 38, 3, doubleStyle=true)
+tb.drawHorizLine(2, 38, 3, doubleStyle = true)
 
-tb.write(2, 1, fgWhite, "Binaural Tone Generator")
+tb.write(2, 1, fgWhite, "Plays f(t) = f₀ + Δf sin(2π ν t)")
 tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
                " or ", fgYellow, "Q", fgWhite, " to quit")
 
 var g = newUIGroup()
 
-var 
-  startbut = newToggleButton(toggled = false, x = 1, y = 6, width = 15, label=" Start playing ")
-  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= 9,width= 25,label="Frequency")
-  octavebut = newToggleButton(toggled = false, x = 1, y = 12, width = 19, label=" Detune one Octave ")
-  detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= 15,width= 25,label="Detune")
-  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= 18,width= 25,label="Volume")
-  detune_octave : bool = false
+var
+  y = 5
+  startbut = newToggleButton(toggled = false, x = 1,
+      y = y, width = 15, label = " Start playing ")
+  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+      y = y+3, width = 25, label = " f₀ / Hz ")
+  deltaslider = newSlider(min = 1, max = 100, step = 1, value = 20, x = 1,
+      y = y+6, width = 25, label = " Δf / Hz ")
+  nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
+      y = y+9, width = 25, label = " ν / Hz ")
+  volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
+      y = y+12, width = 25, label = "Volume")
 
 proc ontoggle_start(but: ToggleButton) =
   if but.toggled:
@@ -56,37 +61,35 @@ proc ontoggle_start(but: ToggleButton) =
   else:
     controlchannel.send(ControlMessage(kind: setinactive))
 
-startbut.ontoggle = ontoggle_start 
+startbut.ontoggle = ontoggle_start
 
 proc onchange_freq(slider: Slider) =
-  if detune_octave:
-    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
-    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value*2 + detuneslider.value)))
-  else:
-    controlchannel.send(ControlMessage(kind: leftfreq, lfreq: float(freqslider.value)))
-    controlchannel.send(ControlMessage(kind: rightfreq, rfreq: float(freqslider.value + detuneslider.value)))
+  controlchannel.send(ControlMessage(kind: cmf0, f0: float(freqslider.value)))
 
-freqslider.onchange = onchange_freq 
-detuneslider.onchange = onchange_freq 
+freqslider.onchange = onchange_freq
 
-proc ontoggle_octave(but: ToggleButton) =
-  detune_octave = but.toggled
-  onchange_freq(freqslider)
+proc onchange_delta(slider: Slider) =
+  controlchannel.send(ControlMessage(kind: cmdeltaf, deltaf: float(
+      deltaslider.value)))
 
-octavebut.ontoggle = ontoggle_octave 
+deltaslider.onchange = onchange_delta
 
+proc onchange_nu(slider: Slider) =
+  controlchannel.send(ControlMessage(kind: cmnu, nu: float(nuslider.value)))
+
+nuslider.onchange = onchange_nu
 
 proc onchange_volume(slider: Slider) =
-    controlchannel.send(ControlMessage(kind: rightvol, rvol: float(volumeslider.value)/100))
-    controlchannel.send(ControlMessage(kind: leftvol, lvol: float(volumeslider.value)/100))
+  controlchannel.send(ControlMessage(kind: cmvol, vol: float(
+      volumeslider.value)/100))
 
-volumeslider.onchange = onchange_volume 
+volumeslider.onchange = onchange_volume
 
 
 g.add(startbut)
 g.add(freqslider)
-g.add(octavebut)
-g.add(detuneslider)
+g.add(deltaslider)
+g.add(nuslider)
 g.add(volumeslider)
 
 g.setFocusto(0)
