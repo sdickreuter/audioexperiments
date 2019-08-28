@@ -36,7 +36,8 @@ tb.setBackgroundColor(bgBlack)
 tb.fill(0, 0, tb.width-1, tb.height-1)
 tb.drawHorizLine(2, 38, 3, doubleStyle = true)
 
-tb.write(2, 1, fgWhite, "Plays f(t) = f₀ + Δf sin(2π ν t)")
+#tb.write(2, 1, fgWhite, "Plays f(t) = f₀ + Δf sin(2π ν t)")
+tb.write(2, 1, fgWhite, "Plays f(t) = f0 + df sin(2pi nu t)")
 tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
                " or ", fgYellow, "Q", fgWhite, " to quit")
 
@@ -44,7 +45,7 @@ var g = newUIGroup()
 
 var
   y = 5
-  startbut = newToggleButton(toggled = false, x = 1,
+#[ startbut = newToggleButton(toggled = false, x = 1,
       y = y, width = 15, label = " Start playing ")
   freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
       y = y+3, width = 25, label = " f₀ / Hz ")
@@ -52,6 +53,17 @@ var
       y = y+6, width = 25, label = " Δf / Hz ")
   nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
       y = y+9, width = 25, label = " ν / Hz ")
+  volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
+      y = y+12, width = 25, label = "Volume")
+]#
+  startbut = newToggleButton(toggled = false, x = 1,
+      y = y, width = 15, label = " Start playing ")
+  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+      y = y+3, width = 25, label = " f0 / Hz ")
+  deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
+      y = y+6, width = 25, label = " df / Hz ")
+  nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
+      y = y+9, width = 25, label = " nu / Hz ")
   volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
       y = y+12, width = 25, label = "Volume")
 

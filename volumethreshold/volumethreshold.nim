@@ -46,10 +46,19 @@ var g = newUIGroup()
 
 var
   y = 5
-  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+#[  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
       y = y+0, width = 25, label = " f₀ / Hz ")
   deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
       y = y+3, width = 25, label = " Δ Volume * 10 ")
+  volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
+      y = y+6, width = 25, label = "Volume")
+  resetbut = newButton(x = 1,
+      y = y+9, width = 18, label = " Reset Parameters ")
+]#
+  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+      y = y+0, width = 25, label = " f0 / Hz ")
+  deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
+      y = y+3, width = 25, label = " Delta Volume * 10 ")
   volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
       y = y+6, width = 25, label = "Volume")
   resetbut = newButton(x = 1,
