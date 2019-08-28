@@ -55,54 +55,58 @@ var
   resetbut = newButton(x = 1,
       y = y+9, width = 18, label = " Reset Parameters ")
 ]#
+  playbut = newButton(x = 1,
+      y = y+0, width = 12, label = " Play Tones ")
+  deltaslider = newFloatSlider(min = 0, max = 10, step = 0.1, value = 0.0, x = 1,
+      y = y+3, width = 25, label = " Delta Volume ")
   freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
-      y = y+0, width = 25, label = " f0 / Hz ")
-  deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
-      y = y+3, width = 25, label = " Delta Volume * 10 ")
-  volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
-      y = y+6, width = 25, label = "Volume")
+      y = y+6, width = 25, label = " f0 / Hz ")
+  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.01, value = 0.1, x = 1,
+      y = y+9, width = 25, label = "Volume")
   resetbut = newButton(x = 1,
-      y = y+9, width = 18, label = " Reset Parameters ")
+      y = y+12, width = 18, label = " Reset Parameters ")
 
 
-proc onchange(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmf0, f0: float(freqslider.value)))
-  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol: float(0.0)))
+proc onpress_play(but: Button) =
+  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol: 0.0))
   controlchannel.send(ControlMessage(kind: setactive))
   sleep(1000)
   controlchannel.send(ControlMessage(kind: setinactive))
   sleep(100)
-  controlchannel.send(ControlMessage(kind: cmf0, f0: float(freqslider.value)))
-  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol: float(
-      deltaslider.value)/10))
+  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol:
+      deltaslider.value))
   controlchannel.send(ControlMessage(kind: setactive))
   sleep(1000)
   controlchannel.send(ControlMessage(kind: setinactive))
 
 
-freqslider.onchange = onchange
-deltaslider.onchange = onchange
+playbut.onpress = onpress_play
 
-proc onchange_volume(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmvol, vol: float(
-      volumeslider.value)/100))
+proc onchange(slider: Slider) =
+  controlchannel.send(ControlMessage(kind: cmf0, f0: float(freqslider.value)))
+
+freqslider.onchange = onchange
+#deltaslider.onchange = onchange
+
+proc onchange_volume(slider: FloatSlider) =
+  controlchannel.send(ControlMessage(kind: cmvol, vol: 
+      volumeslider.value))
 
 volumeslider.onchange = onchange_volume
 
 proc onpress_reset(but: Button) =
   freqslider.value = 440
-  deltaslider.value = 20
-  volumeslider.value = 10
+  deltaslider.value = 0.0
+  volumeslider.value = 0.1
   controlchannel.send(ControlMessage(kind: cmf0, f0: float(freqslider.value)))
-  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol: float(
-      deltaslider.value)/10))
-  controlchannel.send(ControlMessage(kind: cmvol, vol: float(
-      volumeslider.value)/100))
+  controlchannel.send(ControlMessage(kind: cmdeltavol, deltavol: deltaslider.value))
+  controlchannel.send(ControlMessage(kind: cmvol, vol: volumeslider.value))
 
 resetbut.onpress = onpress_reset
 
-g.add(freqslider)
+g.add(playbut)
 g.add(deltaslider)
+g.add(freqslider)
 g.add(volumeslider)
 g.add(resetbut)
 

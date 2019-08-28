@@ -30,7 +30,7 @@ proc runthread {.thread.} =
 
 
   ## init params
-  params = newGeneratorParams(f0=440,deltavol=0.2,vol=0.1)
+  params = newGeneratorParams(f0=440,deltavol=0.0,vol=0.1)
 
   ## main loop
   while true:
@@ -66,12 +66,12 @@ proc runthread {.thread.} =
           x += (params.f0.get() / float32(sampleRate) ) * (2*PI)
           x = x mod (2*PI)
           
-          y = sin(x) * params.vol.get()*params.fade.get()
+          y = sin(x) * params.vol.get()*params.fade.get()*(1.0+params.deltavol.get())
 
           ## calculate amplitude for left channel
-          leftdata[i] = y 
+          leftdata[i] = y
           ## calculate amplitude for right channel
-          rightdata[i] = y*params.deltavol.get()
+          rightdata[i] = y
 
         ## check for end of fade-out and disable sound generation
         if params.fade.get() < 0.000001:

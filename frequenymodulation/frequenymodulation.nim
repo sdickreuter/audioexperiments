@@ -58,13 +58,13 @@ var
 ]#
   startbut = newToggleButton(toggled = false, x = 1,
       y = y, width = 15, label = " Start playing ")
-  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
-      y = y+3, width = 25, label = " f0 / Hz ")
-  deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
-      y = y+6, width = 25, label = " df / Hz ")
+  deltaslider = newFloatSlider(min = 0.0, max = 10.0, step = 0.1, value = 0.0, x = 1,
+      y = y+3, width = 25, label = " df / Hz ")
   nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
-      y = y+9, width = 25, label = " nu / Hz ")
-  volumeslider = newSlider(min = 0, max = 100, step = 1, value = 10, x = 1,
+      y = y+6, width = 25, label = " nu / Hz ")
+  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+      y = y+9, width = 25, label = " f0 / Hz ")
+  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.01, value = 0.1, x = 1,
       y = y+12, width = 25, label = "Volume")
 
 proc ontoggle_start(but: ToggleButton) =
@@ -80,9 +80,8 @@ proc onchange_freq(slider: Slider) =
 
 freqslider.onchange = onchange_freq
 
-proc onchange_delta(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmdeltaf, deltaf: float(
-      deltaslider.value)))
+proc onchange_delta(slider: FloatSlider) =
+  controlchannel.send(ControlMessage(kind: cmdeltaf, deltaf: deltaslider.value))
 
 deltaslider.onchange = onchange_delta
 
@@ -91,17 +90,16 @@ proc onchange_nu(slider: Slider) =
 
 nuslider.onchange = onchange_nu
 
-proc onchange_volume(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmvol, vol: float(
-      volumeslider.value)/100))
+proc onchange_volume(slider: FloatSlider) =
+  controlchannel.send(ControlMessage(kind: cmvol, vol: volumeslider.value))
 
 volumeslider.onchange = onchange_volume
 
 
 g.add(startbut)
-g.add(freqslider)
 g.add(deltaslider)
 g.add(nuslider)
+g.add(freqslider)
 g.add(volumeslider)
 
 g.setFocusto(0)

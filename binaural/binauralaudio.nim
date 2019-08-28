@@ -52,7 +52,7 @@ var
   freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= y+3,width= 25,label="Frequency/Hz")
   octavebut = newToggleButton(toggled = false, x = 1, y = y+6, width = 19, label=" Detune one Octave ")
   detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= y+9,width= 25,label="Detune/Hz")
-  volumeslider = newSlider(min= 0,max= 100,step= 1,value= 10,x= 1,y= y+12,width= 25,label="Volume")
+  volumeslider = newFloatSlider(min= 0,max= 1,step= 0.01,value= 0.1,x= 1,y= y+12,width= 25,label="Volume")
   detune_octave : bool = false
   monobut = newToggleButton(toggled = false, x = 1, y = y+15, width = 15, label=" Activate Mono ")
 
@@ -83,9 +83,9 @@ proc ontoggle_octave(but: ToggleButton) =
 octavebut.ontoggle = ontoggle_octave 
 
 
-proc onchange_volume(slider: Slider) =
-    controlchannel.send(ControlMessage(kind: rightvol, rvol: float(volumeslider.value)/100))
-    controlchannel.send(ControlMessage(kind: leftvol, lvol: float(volumeslider.value)/100))
+proc onchange_volume(slider: FloatSlider) =
+    controlchannel.send(ControlMessage(kind: rightvol, rvol: volumeslider.value))
+    controlchannel.send(ControlMessage(kind: leftvol, lvol: volumeslider.value))
 
 volumeslider.onchange = onchange_volume 
 

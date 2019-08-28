@@ -91,10 +91,102 @@ method draw*(slider:Slider, tb: var TerminalBuffer) =
   
   numberstr = generate_centered_string(slider.value,slider.width)
 
+  #if slider.focus:
+  #  tb.setBackgroundColor(bgBlue)
+  #else:
+  #  tb.setBackgroundColor(bgYellow)
+  tb.setBackgroundColor(bgYellow)
+
+  for i in 0..<pos:
+    tb.write(slider.x+1+i, slider.y+1,$numberstr[i]) #█░
+  
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite)
+  for i in pos..<slider.width:
+    tb.write(slider.x+1+i, slider.y+1,$numberstr[i])
+
   if slider.focus:
     tb.setBackgroundColor(bgBlue)
   else:
-    tb.setBackgroundColor(bgYellow)
+    tb.setBackgroundColor(bgBlack)
+  
+  tb.setForegroundColor(fgWhite)
+  tb.write(slider.x+1, slider.y,slider.label)
+
+
+
+
+
+
+type
+  ## Widget for setting an integer with the left/right keys 
+  ## and displaying a nice slider as indication
+  FloatSlider* = ref object of UIObject
+    min*, max*, value*: float
+    step* : float
+    label* : string 
+    roundtodec* : int
+    onchange* : proc(slider: FloatSlider)
+
+## Dummy onchange function
+proc onchange(slider: FloatSlider) =
+  discard
+
+proc newFloatSlider*(min, max, step, value: float; x,y,width: int, roundtodec = 2, label=""): FloatSlider =
+  result = new(FloatSlider)
+  result.min = min
+  result.max = max
+  result.step = step
+  result.value = value
+  result.x = x
+  result.y = y
+  result. width = width
+  result.label = label
+  result.focus = false
+  result.roundtodec = roundtodec
+  ## Change this to your own proc after newSlider if you want
+  result.onchange = onchange
+
+proc inc*(slider: FloatSlider) =
+  slider.value += slider.step
+  if slider.value > slider.max:
+    slider.value = slider.max
+
+proc dec*(slider: FloatSlider) =
+  slider.value -= slider.step
+  if slider.value < slider.min:
+    slider.value = slider.min
+
+method handleinput*(slider: FloatSlider, key: Key) =
+  case key  
+  of Key.Right:
+    slider.inc()
+    slider.onchange(slider)
+  of Key.Left:
+    slider.dec()
+    slider.onchange(slider)
+  else:
+    discard
+
+method draw*(slider:FloatSlider, tb: var TerminalBuffer) =
+  var 
+    pos: int
+    numberstr: string
+
+  tb.setBackgroundColor(bgBlack)
+  tb.setForegroundColor(fgWhite, true)
+  tb.drawRect(slider.x, slider.y, slider.x+slider.width+1, slider.y+2,doubleStyle=true)
+  
+  pos = int( ( (slider.value - slider.min) / (slider.max - slider.min) ) * float(slider.width))
+  tb.setForegroundColor(fgNone)
+  
+  numberstr = generate_centered_string(slider.value.formatFloat(ffDefault,slider.roundtodec),slider.width)
+   
+  #if slider.focus:
+  #  tb.setBackgroundColor(bgBlue)
+  #else:
+  #  tb.setBackgroundColor(bgYellow)
+  tb.setBackgroundColor(bgYellow)
  
   for i in 0..<pos:
     tb.write(slider.x+1+i, slider.y+1,$numberstr[i]) #█░
@@ -104,9 +196,20 @@ method draw*(slider:Slider, tb: var TerminalBuffer) =
   for i in pos..<slider.width:
     tb.write(slider.x+1+i, slider.y+1,$numberstr[i])
 
-  tb.setBackgroundColor(bgBlack)
+  if slider.focus:
+    tb.setBackgroundColor(bgBlue)
+  else:
+    tb.setBackgroundColor(bgBlack)
+  
   tb.setForegroundColor(fgWhite)
   tb.write(slider.x+1, slider.y,slider.label)
+
+
+
+
+
+
+
 
 
 type
