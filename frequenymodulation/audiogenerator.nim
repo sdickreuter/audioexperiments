@@ -78,6 +78,7 @@ proc runthread {.thread.} =
         ## check for end of fade-out and disable sound generation
         if params.fade.get() < 0.000001:
           active = false
+ 
 
         ## send audio data to audioplayer.nim
         var msg = AudioMessage(kind: amaudio)
