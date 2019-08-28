@@ -48,7 +48,7 @@ var
       y = y, width = 15, label = " Start playing ")
   freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
       y = y+3, width = 25, label = " f₀ / Hz ")
-  deltaslider = newSlider(min = 1, max = 100, step = 1, value = 20, x = 1,
+  deltaslider = newSlider(min = 0, max = 100, step = 1, value = 20, x = 1,
       y = y+6, width = 25, label = " Δf / Hz ")
   nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
       y = y+9, width = 25, label = " ν / Hz ")
