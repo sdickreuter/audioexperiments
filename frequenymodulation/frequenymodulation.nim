@@ -37,9 +37,10 @@ tb.fill(0, 0, tb.width-1, tb.height-1)
 tb.drawHorizLine(2, 38, 3, doubleStyle = true)
 
 #tb.write(2, 1, fgWhite, "Plays f(t) = f₀ + Δf sin(2π ν t)")
-tb.write(2, 1, fgWhite, "Plays f(t) = f0 + df sin(2pi nu t)")
+tb.write(2, 1, fgWhite, "Plays f(t) = f0 + df sin(2pi omega t)")
 tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
-               " or ", fgYellow, "Q", fgWhite, " to quit")
+               " or ", fgYellow, "Q", fgWhite, " to quit",
+               ", press ", fgYellow, "P", fgWhite, " to play")
 
 var g = newUIGroup()
 
@@ -60,11 +61,11 @@ var
       y = y, width = 15, label = " Start playing ")
   deltaslider = newFloatSlider(min = 0.0, max = 10.0, step = 0.1, value = 0.0, x = 1,
       y = y+3, width = 25, label = " df / Hz ")
-  nuslider = newSlider(min = 1, max = 10, step = 1, value = 5, x = 1,
-      y = y+6, width = 25, label = " nu / Hz ")
-  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+  nuslider = newFloatSlider(min = 0, max = 10, step = 0.1, value = 0.1, x = 1,
+      y = y+6, width = 25, label = " omega / Hz ")
+  freqslider = newSlider(min = 10, max = 4000, step = 5, value = 440, x = 1,
       y = y+9, width = 25, label = " f0 / Hz ")
-  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.01, value = 0.1, x = 1,
+  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.1, value = 0.1, x = 1,
       y = y+12, width = 25, label = "Volume")
 
 proc ontoggle_start(but: ToggleButton) =
@@ -85,8 +86,8 @@ proc onchange_delta(slider: FloatSlider) =
 
 deltaslider.onchange = onchange_delta
 
-proc onchange_nu(slider: Slider) =
-  controlchannel.send(ControlMessage(kind: cmnu, nu: float(nuslider.value)))
+proc onchange_nu(slider: FloatSlider) =
+  controlchannel.send(ControlMessage(kind: cmnu, nu: nuslider.value))
 
 nuslider.onchange = onchange_nu
 
@@ -112,6 +113,8 @@ while true:
   var key = getKey()
   case key
   of Key.None: discard
+  of Key.P: 
+    startbut.toggle() 
   of Key.Escape, Key.Q: exitProc()
   else:
     g.handleinput(key)

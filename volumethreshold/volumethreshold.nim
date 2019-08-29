@@ -38,7 +38,8 @@ tb.drawHorizLine(2, 37, 3, doubleStyle = true)
 
 tb.write(2, 1, fgWhite, "Just-noticeable difference Generator")
 tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
-               " or ", fgYellow, "Q", fgWhite, " to quit")
+               " or ", fgYellow, "Q", fgWhite, " to quit",
+               ", press ", fgYellow, "P", fgWhite, " to play")
 tb.write(2, 2, "Change any parameter to play sounds")
 
 
@@ -57,11 +58,11 @@ var
 ]#
   playbut = newButton(x = 1,
       y = y+0, width = 12, label = " Play Tones ")
-  deltaslider = newFloatSlider(min = 0, max = 10, step = 0.1, value = 0.0, x = 1,
+  deltaslider = newFloatSlider(min = 0, max = 10, step = 0.01, value = 0.0, x = 1,
       y = y+3, width = 25, label = " Delta Volume ")
-  freqslider = newSlider(min = 10, max = 1000, step = 5, value = 440, x = 1,
+  freqslider = newSlider(min = 10, max = 4000, step = 5, value = 440, x = 1,
       y = y+6, width = 25, label = " f0 / Hz ")
-  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.01, value = 0.1, x = 1,
+  volumeslider = newFloatSlider(min = 0, max = 1, step = 0.1, value = 0.1, x = 1,
       y = y+9, width = 25, label = "Volume")
   resetbut = newButton(x = 1,
       y = y+12, width = 18, label = " Reset Parameters ")
@@ -121,6 +122,8 @@ while true:
   var key = getKey()
   case key
   of Key.None: discard
+  of Key.P: 
+    playbut.onpress_play()  
   of Key.Escape, Key.Q: exitProc()
   else:
     g.handleinput(key)

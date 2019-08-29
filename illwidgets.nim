@@ -75,6 +75,14 @@ method handleinput*(slider: Slider, key: Key) =
   of Key.Left:
     slider.dec()
     slider.onchange(slider)
+  of Key.PageUp:
+    for i in 0..9:
+      slider.inc()
+    slider.onchange(slider)
+  of Key.PageDown:
+    for i in 0..9:
+      slider.dec()
+    slider.onchange(slider)
   else:
     discard
 
@@ -164,6 +172,14 @@ method handleinput*(slider: FloatSlider, key: Key) =
     slider.onchange(slider)
   of Key.Left:
     slider.dec()
+    slider.onchange(slider)
+  of Key.PageUp:
+    for i in 0..9:
+      slider.inc()
+    slider.onchange(slider)
+  of Key.PageDown:
+    for i in 0..9:
+      slider.dec()
     slider.onchange(slider)
   else:
     discard

@@ -38,7 +38,8 @@ tb.drawHorizLine(2, 52, 4, doubleStyle=true)
 
 tb.write(2, 1, fgWhite, "Binaural Tone Generator")
 tb.write(2, 2, "Press ", fgYellow, "ESC", fgWhite,
-               " or ", fgYellow, "Q", fgWhite, " to quit")
+               " or ", fgYellow, "Q", fgWhite, " to quit",
+               ", press ", fgYellow, "P", fgWhite, " to play")
 tb.write(2, 3, "Use ", fgYellow, "↑↓", fgWhite,
                " to navigate and ", fgYellow, "←→",
                 fgWhite, " or " , fgYellow, "Enter", fgWhite, " to change values")
@@ -49,10 +50,10 @@ var g = newUIGroup()
 var 
   y = 5
   startbut = newToggleButton(toggled = false, x = 1, y = y, width = 15, label=" Start playing ")
-  freqslider = newSlider(min= 10,max= 1000,step= 5,value= 440,x= 1,y= y+3,width= 25,label="Frequency/Hz")
+  freqslider = newSlider(min= 10,max= 4000,step= 5,value= 440,x= 1,y= y+3,width= 25,label="Frequency/Hz")
   octavebut = newToggleButton(toggled = false, x = 1, y = y+6, width = 19, label=" Detune one Octave ")
   detuneslider = newSlider(min= -100,max= 100,step= 1,value= 0,x= 1,y= y+9,width= 25,label="Detune/Hz")
-  volumeslider = newFloatSlider(min= 0,max= 1,step= 0.01,value= 0.1,x= 1,y= y+12,width= 25,label="Volume")
+  volumeslider = newFloatSlider(min= 0,max= 1,step= 0.1,value= 0.1,x= 1,y= y+12,width= 25,label="Volume")
   detune_octave : bool = false
   monobut = newToggleButton(toggled = false, x = 1, y = y+15, width = 15, label=" Activate Mono ")
 
@@ -112,6 +113,8 @@ while true:
   var key = getKey()
   case key
   of Key.None: discard
+  of Key.P:   
+    startbut.toggle() 
   of Key.Escape, Key.Q: exitProc()
   else:
     g.handleinput(key)

@@ -30,7 +30,7 @@ proc runthread {.thread.} =
 
 
   ## init params
-  params = newGeneratorParams(f0=440,nu=5,deltaf=0.0,vol=0.1)
+  params = newGeneratorParams(f0=440,nu=0.1,deltaf=0.0,vol=0.1)
 
   ## main loop
   while true:
